@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aplikasi OSCE D3 Keperawatan Waikabubak</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+
+<!-- ================================================================= -->
+<!-- DATA DARI FILE JSON DISEMATKAN DI SINI (JIKA PERLU) -->
+<!-- ================================================================= -->
+
+</head>
+<body>
+
+<div id="login-page">
+    <div class="card shadow-lg" style="width: 22rem;">
+        <div class="card-body p-4 text-center">
+            <!-- Tambahkan logo di sini -->
+            <img src="LOGO POLTEKKES KEMENKES KUPANG.png" alt="Logo Poltekkes" style="width: 350px; margin-bottom: 40px;">
+            
+            <h4 class="card-title mb-1">
+                <i class="fas fa-stethoscope text-primary"></i> OSCE App Management V1.3
+            </h4>
+            <p class="text-muted mb-4">Silakan login untuk melanjutkan</p>
+            <form id="login-form">
+                <div class="mb-3 text-start">
+                    <label for="username" class="form-label">Username (NIM/NIDN/ID)</label>
+                    <input type="text" class="form-control" id="username" required>
+                </div>
+                <div class="mb-3 text-start">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+                <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+                <button type="submit" class="btn btn-primary w-100 mt-2">Login</button>
+            </form>
+        </div>
+        <div class="card-footer text-center text-muted py-3">
+            <small>© 2025. Develop by Mas Andy</small>
+        </div>
+    </div>
+</div>
+
+
+<div id="app-container">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+    <a class="navbar-brand" href="#" data-page="page-dashboard"><i class="fas fa-stethoscope"></i> OSCE App V1.3</a>
+    <span id="realtime-status-badge" class="badge rounded-pill bg-secondary ms-2 d-none d-md-inline-block"><i class="fas fa-circle me-1 small"></i> Offline</span>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ms-auto">
+    <!-- Admin & Penguji links -->
+    <li class="nav-item role-admin"><a class="nav-link active" href="#" data-page="page-dashboard"><i class="fas fa-tachometer-alt"></i> Beranda</a></li>
+    <li class="nav-item dropdown role-admin">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"><i class="fas fa-cogs"></i> Manajemen</a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" href="#" data-page="page-peserta"><i class="fas fa-users"></i> Peserta</a></li>
+            <li><a class="dropdown-item" href="#" data-page="page-penguji"><i class="fas fa-user-tie"></i> Penguji</a></li>
+            <li><a class="dropdown-item" href="#" data-page="page-station"><i class="fas fa-sitemap"></i> Station</a></li>
+        </ul>
+    </li>
+    <li class="nav-item role-admin role-penguji"><a class="nav-link" href="#" data-page="page-penilaian"><i class="fas fa-clipboard-list"></i> Penilaian</a></li>
+    <li class="nav-item dropdown role-admin">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownHasil" role="button" data-bs-toggle="dropdown"><i class="fas fa-chart-bar"></i> Hasil</a>
+        <ul class="dropdown-menu shadow border-0" aria-labelledby="navbarDropdownHasil">
+            <li><a class="dropdown-item" href="#" data-page="page-hasil"><i class="fas fa-poll text-primary"></i> Rekapitulasi Hasil</a></li>
+            <li><a class="dropdown-item" href="laporan.html" target="_blank"><i class="fas fa-file-medical-alt text-success"></i> Laporan Komprehensif</a></li>
+        </ul>
+    </li>
+    <li class="nav-item dropdown role-admin">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownCert" role="button" data-bs-toggle="dropdown"><i class="fas fa-award"></i> Sertifikat</a>
+        <ul class="dropdown-menu" aria-labelledby="navbarDropdownCert">
+            <li><a class="dropdown-item" href="#" data-page="page-sertifikat-settings"><i class="fas fa-cog"></i> Pengaturan</a></li>
+            <li><a class="dropdown-item" href="#" data-page="page-sertifikat-print"><i class="fas fa-print"></i> Sertifikat Peserta</a></li>
+            <li><a class="dropdown-item" href="#" data-page="page-sertifikat-penguji"><i class="fas fa-user-shield"></i> Sertifikat Penguji</a></li>
+        </ul>
+    </li>
+    <li class="nav-item role-penguji d-none">
+        <button class="btn btn-info" onclick="pushPengujiScores()"><i class="fas fa-cloud-upload-alt"></i> Kirim Nilai</button>
+    </li>
+    <!-- Peserta Links -->
+    <li class="nav-item role-peserta d-none"><a class="nav-link active" href="#" data-page="page-peserta-dashboard"><i class="fas fa-user-graduate"></i> Dashboard</a></li>
+    <li class="nav-item role-peserta d-none"><a class="nav-link" href="#" data-page="page-peserta-hasil"><i class="fas fa-poll-h"></i> Hasil & Umpan Balik</a></li>
+    <li class="nav-item role-peserta d-none"><a class="nav-link" href="#" data-page="page-peserta-sertifikat"><i class="fas fa-award"></i> Sertifikat</a></li>
+
+    <li class="nav-item dropdown role-all">
+        <a class="nav-link dropdown-toggle" href="#" id="moreDropdown" role="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i> More</a>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="moreDropdown">
+            <li class="role-admin"><a class="dropdown-item" href="#" data-page="page-feedback-summary"><i class="fas fa-comment-dots text-primary"></i> Feedback</a></li>
+            <li class="role-admin"><a class="dropdown-item" href="#" data-page="page-log-sistem"><i class="fas fa-history text-secondary"></i> Log Sistem</a></li>
+            <li class="role-all border-top pt-2 mt-2"><a class="dropdown-item" href="#" data-page="page-panduan"><i class="fas fa-book text-success"></i> Panduan Aplikasi</a></li>
+            <li class="role-all"><a class="dropdown-item" href="#" data-page="page-about-developer"><i class="fas fa-info-circle text-info"></i> About Developer</a></li>
+        </ul>
+    </li>
+    <li class="nav-item ms-lg-3">
+        <button class="btn btn-danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </li>
+    </ul>
+    </div>
+    </div>
+    </nav>
+    <div class="container mt-5">
+        <div id="page-dashboard" class="page active">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <h2 class="h4 mb-0">Dashboard</h2>
+                <div class="btn-toolbar" role="toolbar">
+                    <div class="btn-group shadow-sm rounded me-2 role-admin" role="group">
+                        <button class="btn btn-primary" onclick="openGenerateScheduleModal()"><i class="fas fa-calendar-alt"></i> Generate Jadwal</button>
+                        <button class="btn btn-outline-danger" onclick="clearExamSchedule()"><i class="fas fa-calendar-times"></i> Hapus Jadwal</button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-print"></i> Cetak/Ekspor</button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="printSchedule()"><i class="fas fa-print me-2"></i>Cetak Jadwal Rotasi (PDF/Print)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportScheduleToCSV()"><i class="fas fa-file-csv me-2"></i>Ekspor Jadwal ke CSV/Excel</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="printStudentAttendance()"><i class="fas fa-user-graduate me-2"></i>Cetak Daftar Hadir Peserta</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="printExaminerAttendance()"><i class="fas fa-user-check me-2"></i>Cetak Daftar Hadir Penguji</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="printExamReport()"><i class="fas fa-file-signature me-2"></i>Cetak Berita Acara Ujian</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="btn-group shadow-sm rounded me-2" role="group">
+                        <button class="btn btn-success" onclick="pullFromSupabase()"><i class="fas fa-cloud-download-alt"></i> Tarik Data</button>
+                        <!-- <button class="btn btn-info" onclick="pushToSupabase()"><i class="fas fa-cloud-upload-alt"></i> Sinkronkan Semua</button> -->
+                    </div>
+                    <div class="btn-group shadow-sm rounded" role="group">
+                        <button class="btn btn-dark" onclick="backupLocalData()"><i class="fas fa-download"></i> Backup</button>
+                        <button class="btn btn-outline-dark" onclick="triggerFileUpload('restore-json-input')"><i class="fas fa-upload"></i> Restore</button>
+                    </div>
+                    <input type="file" id="restore-json-input" class="d-none" accept=".json" onchange="handleRestoreFile(event)">
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-4 mb-4"><div class="card stat-card shadow-sm"><div class="d-flex justify-content-between align-items-center"><div><div class="stat-value" id="total-peserta">0</div><div class="stat-label">Total Peserta</div></div><i class="fas fa-users stat-icon"></i></div></div></div>
+                <div class="col-md-4 mb-4"><div class="card stat-card shadow-sm"><div class="d-flex justify-content-between align-items-center"><div><div class="stat-value" id="total-penguji">0</div><div class="stat-label">Total Penguji</div></div><i class="fas fa-user-tie stat-icon"></i></div></div></div>
+                <div class="col-md-4 mb-4"><div class="card stat-card shadow-sm"><div class="d-flex justify-content-between align-items-center"><div><div class="stat-value" id="total-station">0</div><div class="stat-label">Total Station</div></div><i class="fas fa-sitemap stat-icon"></i></div></div></div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-4 mb-4"><div class="card stat-card border-success shadow-sm"><div class="d-flex justify-content-between align-items-center"><div><div class="stat-value" id="peserta-selesai">0</div><div class="stat-label">Selesai Ujian (>= 9 Station)</div></div><i class="fas fa-user-check stat-icon text-success"></i></div></div></div>
+                <div class="col-md-4 mb-4"><div class="card stat-card border-warning shadow-sm"><div class="d-flex justify-content-between align-items-center"><div><div class="stat-value" id="peserta-sedang">0</div><div class="stat-label">Sedang Ujian</div></div><i class="fas fa-user-clock stat-icon text-warning"></i></div></div></div>
+                <div class="col-md-4 mb-4"><div class="card stat-card border-danger shadow-sm"><div class="d-flex justify-content-between align-items-center"><div><div class="stat-value" id="peserta-belum">0</div><div class="stat-label">Belum Ujian</div></div><i class="fas fa-user-times stat-icon text-danger"></i></div></div></div>
+            </div>
+
+            <!-- Global Exam Timer -->
+            <div class="card mb-4 role-admin">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                    <span><i class="fas fa-stopwatch text-primary"></i> Timer Ujian Global</span>
+                    <span id="dashboard-timer-info" class="text-muted fw-normal small">Menunggu...</span>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Timer Type Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Pilih Jenis Timer:</label>
+                        <div class="btn-group" role="group" id="timer-type-selector">
+                            <input type="radio" class="btn-check" name="timer-type" id="timer-type-rotation" value="rotation" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="timer-type-rotation">Timer per Rotasi</label>
+
+                            <input type="radio" class="btn-check" name="timer-type" id="timer-type-session" value="session" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="timer-type-session">Timer per Sesi</label>
+                        </div>
+                    </div>
+
+                    <!-- Duration Input -->
+                    <div class="row justify-content-center mb-3">
+                        <div class="col-md-4">
+                            <label for="timer-duration-input" class="form-label">Durasi (menit)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="timer-duration-input" value="10" min="1">
+                                <span class="input-group-text">menit</span>
+                            </div>
+                            <small id="timer-duration-suggestion" class="form-text text-muted"></small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                         <button id="btn-timer-enter" class="btn btn-info px-5 py-3 text-white shadow-sm fw-bold border-0" style="background: linear-gradient(135deg, #0dcaf0, #0aa2c0);"><i class="fas fa-book-reader me-2"></i>SILAKAN MEMBACA SOAL</button>
+                    </div>
+
+                    <h1 id="dashboard-timer-display" class="display-1 fw-bold my-3" style="font-size: 8rem; letter-spacing: 4px;">00:00</h1>
+                    
+                    <div class="btn-group shadow-sm" role="group">
+                        <button id="btn-timer-start" class="btn btn-success px-4 py-2"><i class="fas fa-play me-2"></i>SILAKAN MASUK DAN MULAI MENGERJAKAN</button>
+                        <button id="btn-timer-next" class="btn btn-primary px-4 py-2" disabled><i class="fas fa-step-forward me-2"></i>SILAKAN PINDAH KE STASE SELANJUTNYA</button>
+                        <button id="btn-timer-pause" class="btn btn-warning px-4 py-2" disabled><i class="fas fa-pause me-2"></i>Jeda</button>
+                        <button id="btn-timer-stop" class="btn btn-danger px-4 py-2" disabled><i class="fas fa-stop me-2"></i>Hentikan</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW: Live Exam Monitor -->
+            <div class="role-admin">
+                <h3 class="mb-3 mt-5"><i class="fas fa-satellite-dish text-danger"></i> Monitor Ujian Langsung <small class="text-muted fs-6 fw-normal">(Refresh otomatis setiap 15 detik)</small></h3>
+                <div id="live-monitor-stations" class="row g-4">
+                    <div class="col-12 text-center text-muted p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Memuat monitor...</p>
+                    </div>
+                </div>
+                <hr class="my-5">
+            </div>
+
+            <div class="row"><div class="col-lg-5 mb-4"><div class="card shadow-sm"><div class="card-header"><i class="fas fa-chart-pie"></i> Status Partisipasi Ujian</div><div class="card-body"><canvas id="statusUjianChart"></canvas></div></div></div><div class="col-lg-7 mb-4"><div class="card shadow-sm"><div class="card-header"><i class="fas fa-chart-bar"></i> Penilaian per Station</div><div class="card-body"><canvas id="penilaianPerStationChart"></canvas></div></div></div></div>
+        </div>
+        
+        <!-- ================================================================= -->
+        <!-- NEW: PESERTA PAGES -->
+        <!-- ================================================================= -->
+        <div id="page-peserta-dashboard" class="page">
+            <h2 class="mb-3" id="peserta-welcome-message">Selamat Datang!</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card stat-card border-primary">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-value" id="peserta-progress-station">0/0</div>
+                                <div class="stat-label">Station Selesai</div>
+                            </div>
+                            <i class="fas fa-tasks stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-md-4 mb-4">
+                    <div class="card stat-card border-success">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-value" id="peserta-avg-score">N/A</div>
+                                <div class="stat-label">Rata-rata Nilai</div>
+                            </div>
+                            <i class="fas fa-percentage stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-md-4 mb-4">
+                    <div class="card stat-card border-warning">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-value" id="peserta-status">...</div>
+                                <div class="stat-label">Status Kelulusan</div>
+                            </div>
+                            <i class="fas fa-award stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="peserta-feedback-container" class="mt-4">
+                <!-- Feedback Form will be loaded here by JS -->
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header"><i class="fas fa-info-circle text-primary"></i> Informasi Penting</div>
+                <div class="card-body">
+                    <p>Selamat datang di dashboard peserta OSCE.</p>
+                    <ul>
+                        <li>Gunakan menu navigasi di atas untuk melihat <strong>Hasil & Umpan Balik</strong> detail Anda atau mengunduh <strong>Sertifikat</strong>.</li>
+                        <li>Pastikan Anda mengikuti semua stasiun sesuai jadwal yang tertera.</li>
+                        <li>Setelah ujian selesai, Anda akan diminta untuk mengisi formulir umpan balik untuk membantu kami meningkatkan kualitas ujian di masa mendatang.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-peserta-hasil" class="page">
+             <div id="peserta-hasil-content">
+                <div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+             </div>
+        </div>
+        
+        <div id="page-peserta-sertifikat" class="page">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-award text-success"></i> Sertifikat Kelulusan Anda</div>
+                <div id="peserta-sertifikat-content" class="card-body text-center p-5">
+                    <!-- Content will be loaded by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- ADMIN/PENGUJI PAGES -->
+        <!-- ================================================================= -->
+        <div id="page-peserta" class="page">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-users"></i> Manajemen Daftar Peserta</div>
+                <div class="card-body p-4">
+                    <form id="form-add-peserta" class="mb-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4"><label class="form-label">NIM Peserta</label><input type="text" id="peserta-nim" class="form-control" placeholder="NIM" required></div>
+                            <div class="col-md-4"><label class="form-label">Nama Lengkap</label><input type="text" id="peserta-nama" class="form-control" placeholder="Nama Lengkap" required></div>
+                            <div class="col-md-2"><label class="form-label">Password</label><input type="password" id="peserta-password" class="form-control" placeholder="Password"></div>
+                            <div class="col-md-2"><button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus"></i> Tambah</button></div>
+                        </div>
+                        <small class="form-text text-muted">Jika password dikosongkan, akan diatur sama dengan NIM.</small>
+                    </form>
+                    <div class="d-flex justify-content-end mb-3">
+                        <button type="button" class="btn btn-outline-primary me-2" onclick="downloadParticipantTemplate()"><i class="fas fa-download"></i> Unduh Template CSV</button>
+                        <button type="button" class="btn btn-info me-2" onclick="printAllExamCards()"><i class="fas fa-print"></i> Cetak Semua Kartu Ujian</button>
+                        <button type="button" class="btn btn-danger me-2" onclick="deleteAllPeserta()"><i class="fas fa-trash-alt"></i> Hapus Semua Peserta</button>
+                        <button type="button" class="btn btn-success" onclick="triggerFileUpload('import-peserta-csv')"><i class="fas fa-file-csv"></i> Import Peserta dari CSV</button>
+                        <input type="file" id="import-peserta-csv" class="d-none" accept=".csv" onchange="importCSV('peserta', event)">
+                    </div>
+                    <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>NIM</th><th>Nama Lengkap</th><th>Sesi</th><th class="text-center">Aksi</th></tr></thead><tbody id="table-peserta-body"></tbody></table></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-penguji" class="page">
+            <div class="card"><div class="card-header"><i class="fas fa-user-tie"></i> Manajemen Daftar Penguji</div><div class="card-body p-4"><form id="form-add-penguji" class="mb-4"><div class="row g-3 align-items-center">
+                <div class="col-md-3"><input type="text" id="penguji-id" class="form-control" placeholder="NIDN / ID Penguji (Username)" required></div>
+                <div class="col-md-4"><input type="text" id="penguji-nama" class="form-control" placeholder="Nama Lengkap" required></div>
+                <div class="col-md-3">
+                    <select id="penguji-station" class="form-select" required>
+                        <option value="" selected disabled>-- Pilih Station --</option>
+                    </select>
+                </div>
+                <div class="col-md-2"><button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus"></i> Tambah</button></div>
+            </div></form>
+                <div class="d-flex justify-content-end mb-3">
+                    <button type="button" class="btn btn-outline-primary me-2" onclick="downloadPengujiTemplate()"><i class="fas fa-download"></i> Unduh Template CSV</button>
+                    <button type="button" class="btn btn-danger me-2" onclick="deleteAllPenguji()"><i class="fas fa-trash-alt"></i> Hapus Semua Penguji</button>
+                    <button type="button" class="btn btn-success" onclick="triggerFileUpload('import-penguji-csv')"><i class="fas fa-file-csv"></i> Import Penguji dari CSV</button>
+                    <input type="file" id="import-penguji-csv" class="d-none" accept=".csv" onchange="importCSV('penguji', event)">
+                </div>
+                <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr>
+                    <th>ID Penguji (Username)</th>
+                    <th>Nama Lengkap</th>
+                    <th>Stasiun Ditugaskan</th>
+                    <th class="text-center">Aksi</th>
+                </tr></thead><tbody id="table-penguji-body"></tbody></table></div></div></div>
+        </div>
+
+        <div id="page-station" class="page">
+             <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-sitemap"></i> Manajemen Station</span>
+                    <button class="btn btn-primary" onclick="openStationModal()"><i class="fas fa-plus-circle"></i> Tambah Station Baru</button>
+                </div>
+                <div class="card-body p-4" id="station-list-container"></div>
+            </div>
+        </div>
+
+        <div id="page-penilaian" class="page">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-edit"></i> Formulir Penilaian OSCE</div>
+                <div class="card-body p-4">
+                    <div id="schedule-time-info" class="alert alert-info d-none" role="alert"></div>
+
+                    <!-- NEW: Auto-detected participant for Penguji -->
+                    <div id="auto-participant-info" class="d-none mb-4">
+                        <!-- Content generated by JS -->
+                    </div>
+
+                    <!-- REVISED: Manual selection row -->
+                    <div id="manual-peserta-selection" class="row mb-4">
+                        <div class="col-md-4"><label for="select-penguji" class="form-label fw-bold">Penguji</label><select id="select-penguji" class="form-select"></select></div>
+                        <div class="col-md-4">
+                            <label for="search-peserta" class="form-label fw-bold">Cari & Pilih Peserta</label>
+                            <input type="text" id="search-peserta" class="form-control mb-1" placeholder="Ketik Nama atau NIM...">
+                            <select id="select-peserta" class="form-select"></select>
+                        </div>
+                        <div class="col-md-4"><label for="select-station" class="form-label fw-bold">Station</label><select id="select-station" class="form-select"></select></div>
+                    </div>
+                    
+                    <div id="station-soal-display" class="mb-4"></div>
+                    <div id="rubric-preview-container" class="mb-4"></div>
+                    <hr>
+                    <div id="timer-container" class="text-center mb-4 d-none">
+                        <h3 class="mb-1" id="timer-display">00:00</h3>
+                        <div class="progress" role="progressbar" style="height: 10px;">
+                            <div id="timer-progress" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                        </div>
+                        <p id="timer-status" class="mt-2 fw-bold d-none"></p>
+                    </div>
+                    <div id="form-penilaian-rubrik"><div class="text-center text-muted p-5"><i class="fas fa-mouse-pointer fa-3x mb-3"></i><p>Pilih Penguji, Peserta, dan Station untuk memulai.</p></div></div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div id="page-hasil" class="page">
+            <!-- NEW SUMMARY STATS -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-4">
+                    <div class="card stat-card border-primary shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-value" id="cohort-average-score">N/A</div>
+                                <div class="stat-label">Rata-Rata Nilai Kolektif</div>
+                            </div>
+                            <i class="fas fa-percentage stat-icon text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card stat-card border-success shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-value" id="cohort-pass-count">N/A</div>
+                                <div class="stat-label">Peserta Lulus (Kolektif)</div>
+                            </div>
+                            <i class="fas fa-user-check stat-icon text-success"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card stat-card border-danger shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-value" id="cohort-fail-count">N/A</div>
+                                <div class="stat-label">Peserta Tdk Lulus (Kolektif)</div>
+                            </div>
+                            <i class="fas fa-user-times stat-icon text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REORGANIZED: Charts Section -->
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-chart-line text-info"></i> Analitik Nilai per Station</span>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="printElement('station-analytics-container', 'Analitik Nilai & Kelulusan per Station')"><i class="fas fa-print"></i> Cetak</button>
+                        </div>
+                        <div class="card-body" id="station-analytics-container">
+                            <canvas id="station-analytics-chart"></canvas>
+                            <div id="station-analytics-fallback" class="text-center text-muted p-4 d-none"><p>Belum ada data.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="card h-100">
+                         <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-tasks text-purple"></i> Analitik Kriteria Rubrik</span>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="printElement('rubric-performance-container', 'Analitik Performa per Kriteria Rubrik')"><i class="fas fa-print"></i> Cetak</button>
+                        </div>
+                        <div class="card-body" id="rubric-performance-container">
+                            <canvas id="rubric-performance-chart"></canvas>
+                            <div id="rubric-performance-fallback" class="text-center text-muted p-4 d-none"><p>Belum ada data.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- NEW: Session Comparison Chart -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-users-cog text-success"></i> Komparasi Nilai per Sesi</span>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="printElement('session-comparison-container', 'Komparasi Nilai Rata-rata per Sesi')"><i class="fas fa-print"></i> Cetak</button>
+                        </div>
+                        <div class="card-body" id="session-comparison-container">
+                            <canvas id="session-comparison-chart"></canvas>
+                            <div id="session-comparison-fallback" class="text-center text-muted p-4 d-none"><p>Belum ada data sesi ujian untuk dibandingkan.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- NEW: Rubric Difficulty Chart -->
+                <div class="col-lg-12 mb-4">
+                    <div class="card mb-4 h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-chart-bar text-danger"></i> Analisis Kesulitan Kriteria Rubrik (15 Terendah)</span>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="printElement('rubric-difficulty-container', 'Analisis Kesulitan Kriteria Rubrik')"><i class="fas fa-print"></i> Cetak</button>
+                        </div>
+                        <div class="card-body" id="rubric-difficulty-container">
+                            <canvas id="rubric-difficulty-chart"></canvas>
+                            <div id="rubric-difficulty-fallback" class="text-center text-muted p-4 d-none"><p>Belum ada data untuk menampilkan analisis kesulitan.</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Performance analysis -->
+                <div class="row">
+                    <div class="col-lg-7 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header"><i class="fas fa-globe-asia text-info"></i> Analisis Global Performance (Skala 1-4)</div>
+                            <div class="card-body">
+                                <div class="row align-items-center h-100">
+                                    <div class="col-md-5 d-flex flex-column justify-content-center">
+                                        <p class="text-muted small">Rata-rata skor "Global Performance" dari semua peserta yang telah menyelesaikan <strong>minimal 9 station</strong>.</p>
+                                        <div class="text-center p-3 bg-light rounded mt-auto">
+                                            <h6 class="text-muted mb-1">Rata-Rata GPR</h6>
+                                            <p class="h2 fw-bold text-info" id="avg-global-performance">N/A</p>
+                                            <small class="d-block">(1: Tdk Lulus, 4: Superior)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <canvas id="global-performance-chart"></canvas>
+                                        <div id="global-performance-fallback" class="text-center text-muted p-4 d-none">
+                                            <p>Belum ada cukup data.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header"><i class="fas fa-tachometer-alt text-success"></i> Konversi GPR ke Skala 100</div>
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                 <p class="text-muted">Nilai ini mengkonversi rata-rata GPR ke skala 1-100. Dapat digunakan sebagai salah satu referensi untuk Batas Lulus Kolektif (BLK).</p>
+                                 <div class="text-center p-4 bg-light rounded mt-3">
+                                     <h6 class="text-muted mb-1">Nilai GPR (Skala 100)</h6>
+                                     <p class="display-4 fw-bold text-success" id="avg-global-performance-100">N/A</p>
+                                     <small class="text-muted">Rumus: (Rata-Rata GPR / 4) * 100</small>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- NEW: Score vs GPR Correlation Chart -->
+                <div class="col-lg-12 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-link text-success"></i> Korelasi Nilai Kolektif vs. Global Performance</span>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="printElement('score-vs-gpr-container', 'Korelasi Nilai Kolektif vs. Global Performance')"><i class="fas fa-print"></i> Cetak</button>
+                        </div>
+                        <div class="card-body" id="score-vs-gpr-container">
+                            <canvas id="score-vs-gpr-chart" style="min-height: 400px;"></canvas>
+                            <div id="score-vs-gpr-fallback" class="text-center text-muted p-4 d-none">
+                                <p>Belum ada cukup data (peserta yang menyelesaikan minimal 9 station valid) untuk menampilkan analisis korelasi.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0"><i class="fas fa-trophy text-warning"></i> Peringkat Nilai Terbaik per Station</h4>
+                <button class="btn btn-outline-secondary" onclick="printElement('station-ranking-container', 'Peringkat Nilai Terbaik per Station')"><i class="fas fa-print"></i> Cetak Peringkat</button>
+            </div>
+            <div id="station-ranking-container" class="row mb-5">
+                <div class="col-12 text-center text-muted p-4"><p>Belum ada data penilaian untuk ditampilkan.</p></div>
+            </div>
+            
+            <!-- NEW: Remedial Recommendation Section -->
+            <div class="card mb-5">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-pills text-info"></i> Rekomendasi Remedial Otomatis</span>
+                    <button class="btn btn-outline-secondary" onclick="printElement('remedial-recommendation-container', 'Rekomendasi Remedial Otomatis')"><i class="fas fa-print"></i> Cetak Daftar</button>
+                </div>
+                <div class="card-body" id="remedial-recommendation-container">
+                    <p class="text-muted"><small>Daftar berikut menampilkan peserta yang direkomendasikan untuk mengikuti remedial pada stasiun tertentu. Rekomendasi didasarkan pada skor peserta yang berada di bawah batas lulus yang dihitung menggunakan Metode Borderline (BRM) atau batas lulus yang ditentukan untuk setiap stasiun.</small></p>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>NIM</th>
+                                    <th>Nama Peserta</th>
+                                    <th>Station yang Memerlukan Remedial</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-remedial-body">
+                                <!-- Content will be generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [MODIFIED] Card "Rekapitulasi Hasil Ujian Kolektif" -->
+            <div class="card mb-5">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                    <span><i class="fas fa-award text-success"></i> Rekapitulasi Hasil Ujian Kolektif</span>
+                    <button id="btn-export-collective-csv" class="btn btn-success btn-sm"><i class="fas fa-file-csv"></i> Ekspor Hasil Kolektif</button>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-end g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">1. Stasiun Dikecualikan</label>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="station-filter-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Pilih Stasiun Pengecualian
+                                </button>
+                                <div class="dropdown-menu p-3 shadow" style="min-width: 300px; max-height: 300px; overflow-y: auto;">
+                                    <div id="station-checkbox-container"></div>
+                                </div>
+                            </div>
+                            <small class="text-muted mt-1 d-block">Dikecualikan: <span class="text-danger fw-bold" id="excluded-stations-display">Tidak ada</span></small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">2. Dasar Penentuan Kelulusan (Acuan)</label>
+                            <select id="passing-method-selector" class="form-select">
+                                <option value="percentage">Batas Lulus Kolektif (%)</option>
+                                <option value="gpr">Nilai GPR (Metode BRM per Station)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold" id="label-passing-grade">3. Batas Lulus Kolektif (%)</label>
+                            <input type="number" id="collective-passing-grade" class="form-control" value="75" min="1" max="100">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100 shadow-sm" onclick="applyCollectiveRekap()"><i class="fas fa-sync-alt"></i> Terapkan & Hitung</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>NIM</th>
+                                    <th>Nama Peserta</th>
+                                    <th class="text-center">Station Terlampaui (Valid)</th>
+                                    <th class="text-center">Stasiun Lulus</th>
+                                    <th class="text-center">Rata-Rata Nilai (%)</th>
+                                    <th class="text-center">Status Kelulusan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-collective-hasil-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card"><div class="card-header"><i class="fas fa-poll"></i> Rekapitulasi Hasil Ujian per Station</div><div class="card-body p-4"><button id="btn-export-csv" class="btn btn-success mb-4"><i class="fas fa-file-csv"></i> Ekspor ke CSV</button><div class="table-responsive"><table class="table table-hover align-middle">
+                <thead><tr><th>NIM</th><th>Nama Peserta</th><th>Station Terakhir</th><th>Penguji Terakhir</th><th>Nilai (Skor / Persen)</th><th class="text-center">Aksi</th></tr></thead>
+                <tbody id="table-hasil-body"></tbody>
+            </table></div></div></div>
+        </div>
+        
+        <!-- NEW: Feedback Summary Page (for Admin) -->
+        <div id="page-feedback-summary" class="page">
+            <h2 class="mb-4"><i class="fas fa-comment-dots text-primary"></i> Rangkuman Umpan Balik Peserta</h2>
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="fas fa-star-half-alt text-warning"></i> Rata-rata Kepuasan per Station</div>
+                        <div class="card-body">
+                            <canvas id="feedback-rating-chart"></canvas>
+                            <div id="feedback-rating-fallback" class="text-center text-muted p-4 d-none"><p>Belum ada data umpan balik untuk ditampilkan.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                     <div class="card h-100">
+                        <div class="card-header"><i class="fas fa-user-clock text-info"></i> Status Pengisian Umpan Balik</div>
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <canvas id="feedback-completion-chart" style="max-height: 250px;"></canvas>
+                             <div id="feedback-completion-fallback" class="text-center text-muted p-4 d-none"><p>Belum ada peserta yang menyelesaikan ujian.</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mt-4">
+                <div class="card-header"><i class="fas fa-comments text-success"></i> Komentar Peserta</div>
+                <div class="card-body">
+                    <div id="feedback-comments-container">
+                        <p class="text-muted text-center p-3">Memuat komentar...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-sertifikat-settings" class="page">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-cog"></i> Pengaturan Umum & Sertifikat</div>
+                <div class="card-body p-4">
+                    <form id="form-cert-settings">
+                        <!-- [NEW] Institution Name Setting -->
+                        <h5 class="mb-3">Pengaturan Institusi</h5>
+                         <div class="mb-3">
+                            <label for="cert-institution-name" class="form-label fw-bold">Nama Institusi</label>
+                            <input type="text" id="cert-institution-name" class="form-control" placeholder="Contoh: Program Studi D3 Keperawatan Waikabubak, Poltekkes Kemenkes Kupang">
+                            <small class="text-muted">Nama ini akan muncul di semua dokumen cetak (sertifikat, berita acara, dll).</small>
+                        </div>
+                        <hr>
+                        <h5 class="mb-3">Pengaturan Sertifikat</h5>
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="cert-format" class="form-label fw-bold">Format Nomor Sertifikat</label>
+                                <input type="text" id="cert-format" class="form-control" placeholder="Contoh: UN/KEP-WKB/X/2025">
+                                <small class="text-muted">Nomor urut akan ditambahkan secara otomatis di depan format ini.</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="cert-start-number" class="form-label fw-bold">Nomor Awal</label>
+                                <input type="number" id="cert-start-number" class="form-control" value="1" min="1">
+                            </div>
+                        </div>
+
+                        <!-- [NEW] Certificate Background Upload -->
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="cert-background-file" class="form-label fw-bold">Unggah Gambar Latar Sertifikat</label>
+                                    <input type="file" id="cert-background-file" class="form-control" accept="image/png, image/jpeg">
+                                    <small class="text-muted">Gunakan gambar ukuran A4 Lanskap untuk hasil terbaik. Jika kosong, akan menggunakan background default.</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <label class="form-label fw-bold">Pratinjau Latar:</label>
+                                <div id="cert-background-preview-container" class="border p-2 bg-light" style="min-height: 100px; display: flex; align-items: center; justify-content: center;">
+                                    <img id="cert-background-preview" src="" alt="Pratinjau Latar" style="max-height: 80px; max-width: 100%; display: none;">
+                                    <span id="cert-background-placeholder" class="text-muted">Background Default</span>
+                                </div>
+                                <button type="button" id="cert-clear-background" class="btn btn-sm btn-outline-danger mt-2 d-none">Hapus Latar</button>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 mt-3">Pengaturan Ujian & Laporan</h5>
+                        <div class="mb-3">
+                            <label for="cert-exam-date" class="form-label fw-bold">Tanggal Pelaksanaan Ujian</label>
+                            <input type="text" id="cert-exam-date" class="form-control" placeholder="Contoh: 25 - 26 Oktober 2025">
+                        </div>
+                         <div class="mb-3">
+                            <label for="cert-venue" class="form-label fw-bold">Tempat/Lokasi Pelaksanaan Ujian</label>
+                            <input type="text" id="cert-venue" class="form-control" placeholder="Contoh: Kampus Poltekkes Prodi Keperawatan Waikabubak">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="cert-city" class="form-label fw-bold">Kota Penerbitan</label>
+                                <input type="text" id="cert-city" class="form-control" placeholder="Contoh: Waikabubak">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cert-date" class="form-label fw-bold">Tanggal Penerbitan</label>
+                                <input type="date" id="cert-date" class="form-control">
+                            </div>
+                        </div>
+                        <hr>
+                        <!-- [MODIFIED] Section for Signatories -->
+                        <h5 class="mb-3">Pengaturan Penanda Tangan</h5>
+                        <div class="row align-items-center">
+                             <div class="col-md-6 mb-3">
+                                <label for="cert-signature-person" class="form-label fw-bold">Penanda Tangan Sertifikat</label>
+                                <select id="cert-signature-person" class="form-select">
+                                    <option value="kaprodi">Ketua Prodi</option>
+                                    <option value="koordinator">Koordinator OSCE</option>
+                                </select>
+                             </div>
+                             <div class="col-md-6 mb-3">
+                                <label for="cert-signature-file" class="form-label fw-bold">Unggah Tanda Tangan Digital</label>
+                                <input type="file" id="cert-signature-file" class="form-control" accept="image/png, image/jpeg">
+                             </div>
+                        </div>
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <small class="text-muted">Gunakan gambar dengan latar belakang transparan (PNG) untuk hasil terbaik.</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <label class="form-label fw-bold">Pratinjau TTD:</label>
+                                <div id="cert-signature-preview-container" class="border p-2 bg-light" style="min-height: 100px; display: flex; align-items: center; justify-content: center;">
+                                    <img id="cert-signature-preview" src="" alt="Pratinjau Tanda Tangan" style="max-height: 80px; max-width: 100%; display: none;">
+                                    <span id="cert-signature-placeholder" class="text-muted">Belum ada gambar</span>
+                                </div>
+                                <button type="button" id="cert-clear-signature" class="btn btn-sm btn-outline-danger mt-2 d-none">Hapus Gambar</button>
+                            </div>
+                        </div>
+                        <hr>
+                        <!-- [MODIFIED] More flexible official information -->
+                        <h5 class="mb-3">Informasi Pejabat</h5>
+                        <div class="row p-3 mb-3 border rounded bg-body-tertiary">
+                            <p class="fw-bold mb-2">1. Data Ketua Program Studi <small class="text-muted">(Untuk Berita Acara & Opsi Sertifikat)</small></p>
+                            <div class="col-md-4 mb-2">
+                                <label for="cert-kaprodi-name" class="form-label">Nama Lengkap & Gelar</label>
+                                <input type="text" id="cert-kaprodi-name" class="form-control form-control-sm" placeholder="Nama Ketua Prodi">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="cert-kaprodi-title" class="form-label">Jabatan</label>
+                                <input type="text" id="cert-kaprodi-title" class="form-control form-control-sm" placeholder="Contoh: Ketua Program Studi">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="cert-kaprodi-nip" class="form-label">NIP/NIDN</label>
+                                <input type="text" id="cert-kaprodi-nip" class="form-control form-control-sm" placeholder="NIP. XXXXXX">
+                            </div>
+                        </div>
+                        <div class="row p-3 border rounded bg-body-tertiary">
+                            <p class="fw-bold mb-2">2. Data Koordinator OSCE <small class="text-muted">(Untuk Daftar Hadir & Opsi Sertifikat)</small></p>
+                            <div class="col-md-4 mb-2">
+                                <label for="cert-koordinator-name" class="form-label">Nama Lengkap & Gelar</label>
+                                <input type="text" id="cert-koordinator-name" class="form-control form-control-sm" placeholder="Nama Koordinator">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="cert-koordinator-title" class="form-label">Jabatan</label>
+                                <input type="text" id="cert-koordinator-title" class="form-control form-control-sm" placeholder="Contoh: Koordinator OSCE">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="cert-koordinator-nip" class="form-label">NIP/NIDN</label>
+                                <input type="text" id="cert-koordinator-nip" class="form-control form-control-sm" placeholder="NIP. XXXXXX">
+                            </div>
+                        </div>
+        
+                        <button type="submit" class="btn btn-primary mt-3"><i class="fas fa-save"></i> Simpan Pengaturan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-sertifikat-print" class="page">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-print"></i> Cetak Sertifikat Kelulusan Peserta</div>
+                <div class="card-body p-4">
+                     <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Tombol cetak akan tersedia untuk semua peserta. Pastikan pengaturan umum telah disimpan dengan benar sebelum mencetak.
+                     </div>
+                     <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>NIM</th>
+                                    <th>Nama Peserta</th>
+                                    <th class="text-center">Nilai Rata-rata (%)</th>
+                                    <th class="text-center">Status Kelulusan</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-sertifikat-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-sertifikat-penguji" class="page">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-user-shield"></i> Cetak Sertifikat Penguji</span>
+                    <button class="btn btn-primary" onclick="printAllPengujiCertificates()"><i class="fas fa-print"></i> Cetak Semua Sertifikat</button>
+                </div>
+                <div class="card-body p-4">
+                     <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Pastikan pengaturan umum telah disimpan dengan benar sebelum mencetak.
+                     </div>
+                     <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Penguji (Username)</th>
+                                    <th>Nama Lengkap</th>
+                                    <th>Stasiun Ditugaskan</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-sertifikat-penguji-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEWLY ADDED PAGE: LOG SISTEM -->
+        <div id="page-log-sistem" class="page">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-history"></i> Log Aktivitas Sistem</span>
+                    <button class="btn btn-sm btn-danger" onclick="clearSystemLog()"><i class="fas fa-trash-alt"></i> Bersihkan Log</button>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info small"><i class="fas fa-info-circle"></i> Log menampilkan 500 aktivitas terakhir. Aktivitas terbaru berada di paling atas.</div>
+                    <div id="log-container" class="list-group" style="max-height: 70vh; overflow-y: auto;">
+                        <!-- Log entries will be injected here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-panduan" class="page">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body p-4">
+                            <h2 class="mb-0"><i class="fas fa-book"></i> Panduan Penggunaan Aplikasi OSCE V1.3</h2>
+                            <p class="mb-0 mt-2 opacity-75 small">Instruksi operasional lengkap untuk setiap peran pengguna (Role).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Guide -->
+                <div class="col-md-4 role-admin">
+                    <div class="card h-100 border-primary">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-user-shield text-primary"></i> ADMINISTRATOR</div>
+                        <div class="card-body small">
+                            <div class="mb-3">
+                                <h6>1. Inisialisasi Data</h6>
+                                <p class="text-muted">Atur Station di menu Manajemen. Gunakan <strong>Impor CSV</strong> untuk menambah Peserta & Penguji secara massal.</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6>2. Penjadwalan</h6>
+                                <p class="text-muted">Klik <strong>Atur Jadwal</strong> di dashboard. Sistem akan generate rotasi sesi otomatis (Realtime).</p>
+                            </div>
+                            <div class="mb-0">
+                                <h6>3. Monitoring</h6>
+                                <p class="text-muted">Pantau progress melalui <strong>Live Dashboard Monitor</strong>. Gunakan menu <strong>Hasil</strong> untuk laporan akhir.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Penguji Guide -->
+                <div class="col-md-4 role-admin role-penguji">
+                    <div class="card h-100 border-info">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-user-tie text-info"></i> PENGUJI</div>
+                        <div class="card-body small">
+                            <div class="mb-3">
+                                <h6>1. Menu Penilaian</h6>
+                                <p class="text-muted">Sistem akan otomatis mengarahkan Anda ke stasiun yang ditugaskan setelah login.</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6>2. Input Skor</h6>
+                                <p class="text-muted">Klik <strong>Mulai Menilai</strong>. Isi rubrik & GPR. Data tersimpan otomatis ke server (Realtime).</p>
+                            </div>
+                            <div class="mb-0">
+                                <h6>3. Riwayat</h6>
+                                <p class="text-muted">Lihat kembali nilai yang sudah dikirim pada tabel riwayat di bawah form penilaian.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Peserta Guide -->
+                <div class="col-md-4 role-admin role-peserta">
+                    <div class="card h-100 border-success">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-user-graduate text-success"></i> PESERTA</div>
+                        <div class="card-body small">
+                            <div class="mb-3">
+                                <h6>1. Dashboard Sesi</h6>
+                                <p class="text-muted">Cek Nomor Station & Waktu pada tabel <strong>Giliran Saya</strong>. Pantau timer di atas layar.</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6>2. Hasil & Feedback</h6>
+                                <p class="text-muted">Setelah ujian 'Selesai', cek skor rata-rata di menu <strong>Hasil</strong>. Isi ulasan di menu Feedback.</p>
+                            </div>
+                            <div class="mb-0">
+                                <h6>3. Sertifikat</h6>
+                                <p class="text-muted">Unduh E-Sertifikat di menu <strong>Sertifikat</strong> jika nilai Anda sudah melampaui Passing Grade.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-about-developer" class="page">
+            <div class="container-about">
+              <img src="assets/profil.png" alt="Foto Septian Andi Prianto" class="profile-photo">
+              <h1>Profil Developer</h1>
+              <p><strong>Nama:</strong> Septian Andi Prianto</p>
+              <p><strong>Institusi:</strong> Prodi Keperawatan Waikabubak, Poltekkes Kemenkes Kupang</p>
+          
+              <h2>📞 Kontak</h2>
+              <ul>
+                <li><strong>Nomor HP:</strong> <a href="https://wa.me/6285253470788" target="_blank">0852-5347-0788</a></li>
+                <li><strong>Email:</strong> <a href="mailto:masandy.devcode@gmail.com" target="_blank">masandy.devcodeormulir Penilaian OSCE@gmail.com</a></li>
+                <li><strong>Instagram:</strong> <a href="https://instagram.com/maz_4ndy" target="_blank">@Maz_4ndy</a></li>
+                <li><strong>Facebook:</strong> <a href="https://facebook.com/mas4ndy" target="_blank">@mas4ndy</a></li>
+                <li><strong>Website:</strong> <a href="https://www.masandigital.com" target="_blank">www.masandigital.com</a></li>
+              </ul>
+          
+          
+              <h2>🛠️ Tools & Aplikasi</h2>
+              <ul>
+                <li><a href="https://cbt-wkb.masandigital.com/" target="_blank">CBT Online Keperawatan</a></li>
+                <li><a href="https://bimbel.masandigital.com/" target="_blank">Bimbel Online Keperawatan</a></li>
+                <li><a href="https://bimbelbidan.masandigital.com/" target="_blank">Bimbel Online Kebidanan</a></li>
+                <li>Aplikasi Peminjaman Alat Lab (Private)</li>
+                <li>Aplikasi Peminjaman Alat BMN (Private)</li>
+                <li><a href="https://watermarks.netlify.app/" target="_blank">Watermarks Location Generator</a></li>
+              </ul>
+          
+              <div class="contact-box">
+                <h3>🤝 Ingin Bekerja Sama?</h3>
+                <p>Untuk kolaborasi, pengembangan sistem, pelatihan, atau kebutuhan digital lainnya — jangan ragu untuk menghubungi saya melalui WhatsApp atau email di atas.</p>
+              </div>
+          
+              <div class="footer-about">
+                &copy; 2025 Septian Andi Prianto | masandigital.com
+              </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- MODALS SECTION -->
+<!-- ================================================================= -->
+<div class="modal fade" id="editPesertaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-edit"></i> Edit Data Peserta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-peserta">
+                    <input type="hidden" id="edit-peserta-id">
+                    <div class="mb-3">
+                        <label for="edit-peserta-nim" class="form-label">NIM</label>
+                        <input type="text" class="form-control" id="edit-peserta-nim" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-peserta-nama" class="form-label">Nama Lengkap</label>
+                        <input type="text" class="form-control" id="edit-peserta-nama" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-peserta-password" class="form-label">Password Baru</label>
+                        <input type="password" class="form-control" id="edit-peserta-password" placeholder="Kosongkan jika tidak ingin diubah">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="savePesertaChanges()">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editPengujiModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="fas fa-user-tie"></i> Edit Data Penguji</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="form-edit-penguji"><input type="hidden" id="edit-penguji-id"><div class="mb-3"><label for="edit-penguji-idPenguji" class="form-label">ID Penguji (Username)</label><input type="text" class="form-control" id="edit-penguji-idPenguji" readonly></div><div class="mb-3"><label for="edit-penguji-nama" class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="edit-penguji-nama" required></div><div class="mb-3"><label for="edit-penguji-station" class="form-label">Stasiun Ditugaskan</label><select id="edit-penguji-station" class="form-select" required></select></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" onclick="savePengujiChanges()">Simpan Perubahan</button></div></div></div></div>
+
+<!-- MODAL FOR EDITING CREDENTIALS -->
+<div class="modal fade" id="editCredentialsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-key"></i> Ubah Kredensial Penguji</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-credentials" onsubmit="event.preventDefault(); saveCredentialsChanges();">
+                    <input type="hidden" id="edit-credentials-penguji-id">
+                    <div class="mb-3">
+                        <label for="edit-credentials-nama" class="form-label">Nama Penguji</label>
+                        <input type="text" class="form-control" id="edit-credentials-nama" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-credentials-old-username" class="form-label">Username Saat Ini</label>
+                        <input type="text" class="form-control" id="edit-credentials-old-username" readonly>
+                    </div>
+                    <hr>
+                    <p class="text-muted"><small>Kosongkan field di bawah jika tidak ingin mengubahnya.</small></p>
+                    <div class="mb-3">
+                        <label for="edit-credentials-new-username" class="form-label">Username Baru</label>
+                        <input type="text" id="edit-credentials-new-username" class="form-control" placeholder="Biarkan kosong jika tidak berubah">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit-credentials-new-password" class="form-label">Password Baru</label>
+                            <input type="password" id="edit-credentials-new-password" class="form-control" placeholder="Biarkan kosong jika tidak berubah">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit-credentials-confirm-password" class="form-label">Konfirmasi Password Baru</label>
+                            <input type="password" id="edit-credentials-confirm-password" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="saveCredentialsChanges()">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="stationModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="stationModalLabel"><i class="fas fa-plus-circle"></i> Tambah Station Baru</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="form-station"><input type="hidden" id="station-id"><div class="row"><div class="col-md-6 mb-3"><label for="station-name" class="form-label fw-bold">Nama Station</label><input type="text" id="station-name" class="form-control" required></div><div class="col-md-3 mb-3"><label for="station-time" class="form-label fw-bold">Waktu (menit)</label><input type="number" id="station-time" class="form-control" min="0" placeholder="Contoh: 10"></div><div class="col-md-3 mb-3"><label for="station-passing-grade" class="form-label fw-bold">Kelulusan (%)</label><input type="number" id="station-passing-grade" class="form-control" min="0" max="100" placeholder="Contoh: 75"></div></div><div class="mb-3"><label for="station-soal" class="form-label fw-bold">Soal / Skenario OSCE</label><textarea id="station-soal" class="form-control" rows="6" placeholder="Masukkan skenario kasus, instruksi untuk peserta, atau detail tugas untuk station ini..."></textarea></div><h6 class="fw-bold">Rubrik Penilaian</h6><div id="rubric-inputs-container"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="addRubricInput()"><i class="fas fa-plus"></i> Tambah Kriteria</button></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="button" class="btn btn-primary" onclick="saveStation()">Simpan Station</button></div></div></div></div>
+
+<div class="modal fade" id="generateScheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-calendar-alt"></i> Buat Jadwal Ujian Otomatis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-generate-schedule">
+                    <div class="mb-3">
+                        <label for="schedule-start-date" class="form-label">Tanggal Mulai Ujian</label>
+                        <input type="date" id="schedule-start-date" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="schedule-start-time" class="form-label">Jam Mulai Harian</label>
+                            <input type="time" id="schedule-start-time" class="form-control" required value="08:00">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="schedule-end-time" class="form-label">Jam Selesai Harian</label>
+                            <input type="time" id="schedule-end-time" class="form-control" required value="17:00">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="schedule-duration" class="form-label">Durasi Default per Station (menit)</label>
+                        <input type="number" id="schedule-duration" class="form-control" required value="10" min="1">
+                        <small class="text-muted">Waktu spesifik yang diatur di tiap station akan diutamakan jika lebih besar.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="schedule-break" class="form-label">Jeda Antar Sesi (menit)</label>
+                        <input type="number" id="schedule-break" class="form-control" required value="15" min="0">
+                    </div>
+                    <hr>
+                    <h6 class="fw-bold">Pengaturan Istirahat Panjang (ISHOMA)</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="schedule-lunch-start" class="form-label">Mulai Jam Istirahat</label>
+                            <input type="time" id="schedule-lunch-start" class="form-control" required value="12:00">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="schedule-lunch-end" class="form-label">Selesai Jam Istirahat</label>
+                            <input type="time" id="schedule-lunch-end" class="form-control" required value="13:00">
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        Setiap sesi yang dijadwalkan tumpang tindih dengan rentang waktu ini akan secara otomatis digeser untuk dimulai setelah jam istirahat selesai.
+                    </small>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="generateExamSchedule()">Generate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="participantDetailModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="participantDetailModalLabel"><i class="fas fa-user-graduate"></i> Detail Hasil Peserta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="participantDetailModalBody"><div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button><button type="button" class="btn btn-primary" id="print-participant-result-btn"><i class="fas fa-print"></i> Cetak Hasil</button></div></div></div></div>
+
+<div class="modal fade" id="syncModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body p-4"><div id="sync-status-content"></div></div></div></div></div>
+
+<footer class="text-center text-muted py-4 mt-5">
+    <p>© 2025. Develop by <a href="#" data-page="page-about-developer" class="text-decoration-none text-muted fw-bold">Mas Andy - masandigital.com</a> <i class="fas fa-heart text-danger"></i>.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="app.js"></script>
+
+</body>
+</html>

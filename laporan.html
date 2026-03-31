@@ -1,0 +1,2734 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Komprehensif Ujian OSCE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #0056b3; /* Biru yang lebih dalam dan profesional */
+            --primary-light: #e6f0fa;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ff9800; /* Oranye yang lebih hangat */
+            --info-color: #0dcaf0;
+            --body-bg: #f4f7f9; /* Abu-abu yang lebih lembut untuk latar belakang */
+            --card-bg: #ffffff;
+            --text-color: #343a40;
+            --heading-color: #003d80; /* Biru yang lebih gelap untuk judul */
+            --shadow-sm: rgba(0, 0, 0, 0.05);
+            --shadow-md: rgba(0, 0, 0, 0.1);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--body-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .report-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #007bff 100%);
+            color: #fff;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+        }
+
+        .report-header h1 {
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 1px;
+            font-size: 2.5rem;
+        }
+        .report-header .lead {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1.1rem;
+        }
+
+        .control-bar {
+            position: sticky;
+            top: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            z-index: 1000;
+            box-shadow: 0 4px 12px var(--shadow-sm);
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .report-section {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px var(--shadow-sm);
+            margin-bottom: 2.5rem;
+        }
+
+        .report-section h3, .report-section h4, .report-section h5 {
+            color: var(--heading-color);
+            font-weight: 600;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .report-section h4 {
+            font-size: 1.25rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        .report-section h5 {
+             font-size: 1.1rem;
+             border-bottom: 2px solid var(--primary-light);
+             margin-top: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 12px var(--shadow-sm);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px var(--shadow-md);
+        }
+        .stat-card-icon {
+            flex-shrink: 0;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 1.5rem;
+        }
+        .stat-card-content .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--heading-color);
+        }
+        .stat-card-content .stat-label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+        .stat-card-placeholder .stat-value {
+             font-size: 1.1rem;
+             font-weight: 500;
+             color: var(--secondary-color);
+        }
+        .stat-card-placeholder .stat-card-icon {
+             background-color: #e9ecef !important;
+             color: var(--secondary-color) !important;
+        }
+
+
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; flex-direction: column; gap: 1rem;
+        }
+        
+        #rubric-difficulty-chart, #differentiating-rubric-chart {
+            max-height: 500px;
+        }
+
+        .accordion-button:not(.collapsed) {
+            color: #fff;
+            background-color: var(--primary-color);
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+        }
+        .accordion-button:not(.collapsed)::after {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23fff'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+        }
+        .accordion-button:focus {
+            box-shadow: 0 0 0 0.25rem var(--primary-light);
+            border-color: var(--primary-color);
+        }
+        .accordion-item {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-bottom: 0.5rem;
+        }
+        .accordion-item:first-of-type, .accordion-item:first-of-type .accordion-button {
+             border-top-left-radius: 8px;
+             border-top-right-radius: 8px;
+        }
+        .accordion-item:last-of-type, .accordion-item:last-of-type .accordion-button.collapsed {
+            border-bottom-right-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .details-row > td {
+            padding: 0 !important;
+            background-color: #f8f9fa;
+        }
+        .details-table {
+            margin: 1rem;
+            background-color: #fff;
+        }
+        .details-table th { background-color: var(--primary-light); }
+
+        .recommendation-card {
+            border-left: 5px solid;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border-radius: 0 8px 8px 0;
+        }
+        .recommendation-card.strength { border-color: var(--success-color); }
+        .recommendation-card.weakness { border-color: var(--danger-color); }
+        .recommendation-card.notes { border-color: var(--warning-color); }
+
+
+        .signature-section {
+            display: none; /* Sembunyikan secara default, hanya tampil saat print/pdf */
+        }
+        .signature-space {
+            height: 80px;
+            width: 280px;
+            margin: 0 auto 1rem auto;
+        }
+        
+        .analysis-placeholder {
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+            color: #6c757d;
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .table-primary {
+            --bs-table-bg: var(--primary-color);
+            --bs-table-border-color: #004185;
+            --bs-table-color: #fff;
+        }
+        
+        .modal-print-content {
+            display: none;
+        }
+
+        @media print {
+            body { background-color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .control-bar, .report-header .btn, #loading-overlay, .no-print, .modal-backdrop { display: none !important; }
+            .details-row { display: none !important; }
+            .report-header { 
+                box-shadow: none; 
+                text-align: center; 
+                background: none; 
+                color: var(--text-color); 
+                padding: 1rem 0;
+                border-radius: 0;
+             }
+            .report-header h1, .report-header .lead { color: var(--text-color); }
+            .report-section { box-shadow: none; border: 1px solid #ccc; padding: 1rem; page-break-inside: avoid; }
+            .container { max-width: 100% !important; }
+            canvas { display: none; }
+            .chart-image-print { display: block !important; max-width: 100%; height: auto; }
+            .signature-section {
+                display: block !important;
+                page-break-before: always;
+            }
+            .d-print-block { display: block !important; }
+            
+            /* Print summary table styling */
+            #summary-section .d-print-block table th {
+                background-color: #f0f0f0 !important;
+                font-weight: 600;
+                font-size: 0.85rem;
+            }
+            #summary-section .d-print-block table td {
+                font-size: 0.85rem;
+            }
+
+            /* === MODAL PRINTING === */
+            body.modal-open main,
+            body.modal-open footer,
+            body.modal-open .report-header,
+            body.modal-open .control-bar,
+            body.modal-open .signature-section {
+                display: none !important;
+            }
+            body.modal-open .modal.show {
+                display: block;
+                position: absolute;
+                top: 0; left: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                z-index: 9999;
+                overflow: visible;
+            }
+            body.modal-open .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+            body.modal-open .modal-content {
+                border: 0 !important;
+                box-shadow: none !important;
+            }
+            body.modal-open .modal-header,
+            body.modal-open .modal-footer {
+                display: none !important;
+            }
+            body.modal-open .modal-body {
+                padding: 0 !important;
+            }
+            
+            /* === NORMAL REPORT PRINT === */
+            .modal:not(.show) {
+                display: none !important;
+            }
+            
+            .badge { border: 1px solid #ccc; }
+            .stat-card { box-shadow: none; border: 1px solid #dee2e6; }
+            .stat-card:hover { transform: none; }
+        }
+
+        /* Styling tambahan untuk render PDF agar bersih */
+        body.pdf-rendering .control-bar,
+        body.pdf-rendering .btn-xs,
+        body.pdf-rendering button:not(.navbar-toggler),
+        body.pdf-rendering .no-print {
+            display: none !important;
+        }
+        body.pdf-rendering .report-header {
+             background: none !important;
+             color: #000 !important;
+             border-bottom: 2px solid #000;
+             border-radius: 0;
+        }
+        body.pdf-rendering .report-header h1, 
+        body.pdf-rendering .report-header .lead {
+            color: #000 !important;
+        }
+        body.pdf-rendering canvas {
+             display: none !important;
+        }
+        body.pdf-rendering .chart-image-print {
+             display: block !important;
+             margin: 0 auto;
+        }
+        body.pdf-rendering .report-section {
+            box-shadow: none !important;
+            border: 1px solid #eee !important;
+        }
+        body.pdf-rendering .signature-section {
+            display: block !important;
+        }
+        body.pdf-rendering .d-print-block {
+            display: block !important;
+        }
+
+        .chart-image-print { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 id="loading-text">Memuat Data Laporan...</h4>
+    </div>
+
+    <header class="report-header">
+        <h1><i class="fas fa-file-medical-alt"></i> Laporan Komprehensif OSCE</h1>
+        <p class="lead" id="institution-name">Program Studi D3 Keperawatan Waikabubak</p>
+        <p id="report-date" class="small"></p>
+    </header>
+
+    <div class="control-bar text-center no-print">
+        <button id="pull-data-btn" class="btn btn-primary btn-lg shadow-sm">
+            <i class="fas fa-sync-alt"></i> Tarik Data
+        </button>
+        <button id="print-btn" class="btn btn-success btn-lg shadow-sm">
+            <i class="fas fa-print"></i> Cetak Laporan Audit
+        </button>
+        <button id="download-pdf-btn" class="btn btn-danger btn-lg shadow-sm">
+            <i class="fas fa-file-pdf"></i> Unduh PDF
+        </button>
+        <!-- START: PINTASAN NAVIGASI BARU -->
+        <div class="mt-3">
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-compass"></i> Navigasi Cepat
+                </button>
+                <ul class="dropdown-menu">
+                    <li><h6 class="dropdown-header">Hasil & Status Peserta</h6></li>
+                    <li><a class="dropdown-item" href="#summary-section">Ringkasan & Statistik Utama</a></li>
+                    <li><a class="dropdown-item" href="#pass-fail-section">Daftar Kelulusan Peserta</a></li>
+                    <li><a class="dropdown-item" href="#incomplete-assessment-section">Peserta Belum Lengkap Dinilai</a></li>
+                    <li><a class="dropdown-item" href="#remedial-section">Rekomendasi Remedial</a></li>
+                    <li><a class="dropdown-item" href="#analysis-section">Analisis Performa Ujian</a></li>
+                    <li><a class="dropdown-item" href="#advanced-analysis-section">Analisis Lanjutan</a></li>
+                    <li><a class="dropdown-item" href="#psychometric-analysis-section">Analisis Psikometrik</a></li>
+                    <li><a class="dropdown-item" href="#academic-recommendations-section">Rekomendasi Akademik</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <main class="container py-5">
+        <!-- Section: Ringkasan & Statistik Utama -->
+        <!-- Section: Ringkasan & Statistik Utama -->
+        <section id="summary-section" class="report-section">
+            <h3><i class="fas fa-chart-pie text-primary"></i> Ringkasan & Statistik Utama</h3>
+            
+            <div class="row g-4 mb-4">
+                <div class="col-lg-3 col-md-6"><div class="stat-card"><div class="stat-card-icon bg-primary text-white"><i class="fas fa-users"></i></div><div class="stat-card-content"><div class="stat-value" id="total-peserta">0</div><div class="stat-label">Total Peserta</div></div></div></div>
+                <div class="col-lg-3 col-md-6"><div class="stat-card"><div class="stat-card-icon bg-secondary text-white"><i class="fas fa-hospital-user"></i></div><div class="stat-card-content"><div class="stat-value" id="total-station">0</div><div class="stat-label">Total Station</div></div></div></div>
+                <div class="col-lg-3 col-md-6"><div class="stat-card"><div class="stat-card-icon bg-light text-muted"><i class="fas fa-ban"></i></div><div class="stat-card-content"><div class="stat-value" id="excluded-station-count">0</div><div class="stat-label">Dikecualikan</div></div></div></div>
+                <div class="col-lg-3 col-md-6"><div class="stat-card"><div class="stat-card-icon text-white" style="background-color: #6f42c1;"><i class="fas fa-layer-group"></i></div><div class="stat-card-content"><div class="stat-value" id="total-sessions">0</div><div class="stat-label">Total Sesi</div></div></div></div>
+            </div>
+
+            <!-- Tabel Summary (Hanya Muncul di Print) -->
+            <div class="d-print-block mb-4" style="display: none;">
+                <h4><i class="fas fa-table"></i> Ringkasan Hasil Ujian (Audit)</h4>
+                <table class="table table-bordered table-sm">
+                    <tbody>
+                        <tr><th>Tanggal Pelaksanaan</th><td id="print-tanggal-pelaksanaan"></td><th>Jumlah Peserta</th><td id="print-total-peserta"></td></tr>
+                        <tr><th>Jumlah Sesi</th><td id="print-total-sesi"></td><th>Jumlah Stasiun (Aktif/Istirahat)</th><td id="print-total-stasiun"></td></tr>
+                        <tr><th>Metode Penilaian</th><td id="print-passing-method"></td><th>Ambang Batas Kelulusan</th><td id="print-passing-grade"></td></tr>
+                        <tr><th>Jumlah Lulus</th><td id="print-lulus-count"></td><th>Jumlah Tidak Lulus</th><td id="print-gagal-count"></td></tr>
+                        <tr><th>Belum Dinilai / Tidak Hadir</th><td id="print-incomplete-count"></td><th>Rata-rata Nilai Kolektif</th><td id="print-average-score"></td></tr>
+                        <tr><th>Nilai GPR (Average)</th><td id="print-average-gpr"></td><th>Status Integritas Data</th><td id="print-integrity-status"></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-8">
+                    <div class="row g-4">
+                        <div class="col-md-6"><div class="stat-card"><div class="stat-card-icon bg-success text-white"><i class="fas fa-user-graduate"></i></div><div class="stat-card-content"><div class="stat-value" id="cohort-pass-count">0</div><div class="stat-label">Peserta Lulus</div></div></div></div>
+                        <div class="col-md-6"><div class="stat-card"><div class="stat-card-icon bg-danger text-white"><i class="fas fa-user-times"></i></div><div class="stat-card-content"><div class="stat-value" id="cohort-fail-count">0</div><div class="stat-label">Peserta Tdk Lulus</div></div></div></div>
+                        <div class="col-md-6"><div class="stat-card shadow-sm border-start border-4 border-warning"><div class="stat-card-icon bg-warning text-dark"><i class="fas fa-user-clock"></i></div><div class="stat-card-content"><div class="stat-value" id="cohort-incomplete-count">0</div><div class="stat-label">Peserta Belum Lengkap</div></div></div></div>
+                        <div class="col-md-6"><div class="stat-card"><div class="stat-card-icon" style="background-color: var(--primary-light); color: var(--primary-color);"><i class="fas fa-percentage"></i></div><div class="stat-card-content"><div class="stat-value" id="cohort-average-score">0%</div><div class="stat-label">Rata-rata Nilai Kolektif</div></div></div></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <canvas id="pass-fail-chart"></canvas>
+                    <img class="chart-image-print" id="pass-fail-chart-img" alt="Grafik Kelulusan">
+                </div>
+            </div>
+            <div class="row g-4 mt-4 no-print">
+                 <div class="col-md-3"><div class="stat-card"><div class="stat-card-icon bg-info text-white"><i class="fas fa-user-tie"></i></div><div class="stat-card-content"><div class="stat-value" id="total-penguji">0</div><div class="stat-label">Total Penguji</div></div></div></div>
+                 <div class="col-md-3"><div class="stat-card"><div class="stat-card-icon bg-warning text-dark"><i class="fas fa-list-check"></i></div><div class="stat-card-content"><div class="stat-value" id="total-penilaian">0</div><div class="stat-label">Total Penilaian</div></div></div></div>
+                 <div class="col-md-3"><div class="stat-card shadow-sm border-start border-4 border-secondary"><div class="stat-card-icon bg-secondary text-white"><i class="fas fa-user-slash"></i></div><div class="stat-card-content"><div class="stat-value" id="cohort-no-score-count">0</div><div class="stat-label">Belum Ujian / Tanpa Nilai</div></div></div></div>
+                 <div class="col-md-3"><div class="stat-card"><div class="stat-card-icon bg-success text-white"><i class="fas fa-shield-alt"></i></div><div class="stat-card-content"><div class="stat-value" id="integrity-ok-count">0</div><div class="stat-label">Status Data</div></div></div></div>
+            </div>
+
+            <div class="row g-4 mt-3 no-print">
+                <div class="col-md-4"><div class="stat-card border-warning-subtle"><div class="stat-card-icon bg-warning-subtle text-warning-emphasis"><i class="fas fa-user-slash"></i></div><div class="stat-card-content"><div class="stat-value" id="unscored-participants">0</div><div class="stat-label">Peserta Tanpa Nilai</div></div></div></div>
+                <div class="col-md-4"><div class="stat-card border-danger-subtle"><div class="stat-card-icon bg-danger-subtle text-danger-emphasis"><i class="fas fa-ghost"></i></div><div class="stat-card-content"><div class="stat-value" id="orphan-scores">0</div><div class="stat-label">Penilaian Bermasalah</div></div></div></div>
+                <div class="col-md-4"><div class="stat-card border-info-subtle"><div class="stat-card-icon bg-info-subtle text-info-emphasis"><i class="fas fa-cogs"></i></div><div class="stat-card-content"><div class="stat-value" id="config-warnings">0</div><div class="stat-label">Peringatan Konfigurasi</div></div></div></div>
+            </div>
+        </section>
+
+        <!-- Section: Daftar Kelulusan Peserta -->
+        <section id="pass-fail-section" class="report-section">
+            <div class="d-flex justify-content-between align-items-start">
+                <h3><i class="fas fa-users-cog text-primary"></i> Daftar Kelulusan Peserta</h3>
+                <div class="text-end">
+                     <button id="export-kelulusan-csv" class="btn btn-sm btn-outline-success ms-auto no-print mb-2">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </button>
+                    <div id="station-filter-info" class="alert alert-info py-1 px-2 small d-none no-print">
+                        Filter aktif: <strong id="active-station-filter-name"></strong>
+                        <button id="reset-station-filter" class="btn-close ms-2" style="font-size: 0.7em;"></button>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-muted small">Klik <button class="btn btn-xs btn-outline-primary py-0 px-1 disabled"><i class="fas fa-plus"></i></button> untuk detail nilai per stasiun, atau <button class="btn btn-xs btn-outline-info py-0 px-1 disabled"><i class="fas fa-user"></i></button> untuk laporan individual.</p>
+            
+            <div class="no-print p-3 bg-light rounded-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="passing-method-input" class="form-label fw-bold">Dasar Penentuan Kelulusan (Acuan):</label>
+                        <select id="passing-method-input" class="form-select">
+                            <option value="percentage">Batas Lulus Kolektif (%)</option>
+                            <option value="gpr">Nilai GPR (Metode BRM per Station)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="passing-grade-input" class="form-label fw-bold">Batas Lulus Kolektif (%):</label>
+                        <input type="number" id="passing-grade-input" class="form-control" min="0" max="100">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Aturan Kelulusan Tambahan:</label>
+                        <div class="p-3 border rounded bg-white">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="rule-min-stations-check">
+                                <label class="form-check-label" for="rule-min-stations-check">
+                                    Wajib lulus minimal 
+                                    <input type="number" id="rule-min-stations-count" value="7" class="form-control-sm" style="width: 60px;" disabled>
+                                    stasiun.
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="rule-critical-stations-check">
+                                <label class="form-check-label" for="rule-critical-stations-check">
+                                    Wajib lulus di Stasiun Kritis berikut:
+                                </label>
+                                <div id="critical-stations-list" class="mt-2 small ps-4" style="max-height: 100px; overflow-y: auto;">
+                                    <!-- Daftar stasiun kritis akan diisi oleh JS -->
+                                    <span class="text-muted">Pilih stasiun di bawah</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                     <button id="apply-passing-grade-btn" class="btn btn-primary w-50">
+                        <i class="fas fa-check"></i> Terapkan Aturan & Hitung Ulang
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row my-4 g-3 no-print">
+                <div class="col-md-5">
+                    <label for="filter-nama-peserta" class="form-label">Cari Nama Peserta:</label>
+                    <input type="text" id="filter-nama-peserta" class="form-control" placeholder="Ketik nama untuk memfilter...">
+                </div>
+                <div class="col-md-4">
+                    <label for="filter-sesi-peserta" class="form-label">Filter Sesi:</label>
+                    <select id="filter-sesi-peserta" class="form-select">
+                        <option value="">Semua Sesi</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter-status-peserta" class="form-label">Filter Status:</label>
+                    <select id="filter-status-peserta" class="form-select">
+                        <option value="">Semua Status</option>
+                        <option value="lulus">Lulus</option>
+                        <option value="gagal">Tidak Lulus</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-primary">
+                        <tr>
+                            <th class="no-print" style="width: 10%;">Aksi</th>
+                            <th>NIM</th>
+                            <th class="text-center">Ranking</th>
+                            <th>Nama Peserta</th>
+                            <th class="text-center">Sesi</th>
+                            <th id="collective-table-score-header" class="text-center">Rata-rata Nilai (%)</th>
+                            <th class="text-center">Stasiun Lulus</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="collective-hasil-body"></tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Section: Peserta Belum Lengkap Dinilai -->
+        <section id="incomplete-assessment-section" class="report-section">
+            <h3><i class="fas fa-user-clock text-warning"></i> Daftar Peserta Belum Lengkap Dinilai</h3>
+            <p class="text-muted small">Daftar ini menunjukkan peserta yang sudah memulai ujian tetapi belum dinilai di semua stasiun yang diwajibkan.</p>
+            
+            <div class="row mb-4 g-3 no-print">
+                <div class="col-md-6">
+                    <label for="filter-nama-incomplete" class="form-label">Cari Nama Peserta:</label>
+                    <input type="text" id="filter-nama-incomplete" class="form-control" placeholder="Ketik nama untuk memfilter...">
+                </div>
+                <div class="col-md-6">
+                    <label for="filter-sesi-incomplete" class="form-label">Filter Sesi:</label>
+                    <select id="filter-sesi-incomplete" class="form-select">
+                        <option value="">Semua Sesi</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>NIM</th>
+                            <th>Nama Peserta</th>
+                            <th class="text-center">Sesi</th>
+                            <th>Stasiun Wajib yang Belum Dinilai</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-incomplete-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section: Penilaian Duplikat -->
+        <section id="duplicate-assessment-section" class="report-section">
+            <h3><i class="fas fa-copy text-danger"></i> Daftar Penilaian Duplikat</h3>
+            <p class="text-muted small">Daftar ini menunjukkan peserta yang dinilai lebih dari satu kali untuk stasiun yang sama. Ini bisa mengindikasikan kesalahan input data atau masalah teknis selama ujian.</p>
+            
+            <div class="row mb-4 g-3 no-print">
+                <div class="col-md-6">
+                    <label for="filter-nama-duplicate" class="form-label">Cari Nama Peserta:</label>
+                    <input type="text" id="filter-nama-duplicate" class="form-control" placeholder="Ketik nama untuk memfilter...">
+                </div>
+                <div class="col-md-6">
+                    <label for="filter-sesi-duplicate" class="form-label">Filter Sesi:</label>
+                    <select id="filter-sesi-duplicate" class="form-select">
+                        <option value="">Semua Sesi</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>NIM</th>
+                            <th>Nama Peserta</th>
+                            <th class="text-center">Sesi</th>
+                            <th>Stasiun Duplikat & Nilai yang Diberikan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-duplicate-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section: Penilaian Sebelum Sesi Dimulai (BARU) -->
+        <section id="early-assessment-section" class="report-section">
+            <h3><i class="fas fa-stopwatch text-info"></i> Daftar Penilaian Sebelum Sesi Dimulai</h3>
+            <p class="text-muted small">Daftar ini menunjukkan peserta yang dinilai sebelum jadwal resmi sesi mereka dimulai. Hal ini mungkin terjadi karena kesalahan pengaturan waktu atau permulaan sesi yang lebih awal dari yang dijadwalkan. Analisis ini memerlukan data <strong>timestamp</strong> pada setiap penilaian dan data <strong>jadwal sesi (startTime)</strong>.</p>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>NIM</th>
+                            <th>Nama Peserta</th>
+                            <th class="text-center">Sesi</th>
+                            <th>Stasiun</th>
+                            <th class="text-center">Waktu Penilaian</th>
+                            <th class="text-center">Jadwal Sesi</th>
+                            <th class="text-center">Selisih (Lebih Awal)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-early-assessment-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section: Rekomendasi Remedial -->
+        <section id="remedial-section" class="report-section">
+            <h3><i class="fas fa-pills text-danger"></i> Rekomendasi Remedial Otomatis</h3>
+            <p class="text-muted small">Daftar berikut menampilkan peserta yang direkomendasikan untuk remedial berdasarkan nilai per stasiun yang berada di bawah standar kelulusan stasiun tersebut (Metode BRM atau nilai default).</p>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>NIM</th>
+                            <th>Nama Peserta</th>
+                            <th>Station & Nilai yang Memerlukan Perbaikan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-remedial-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- BAGIAN BARU: Peserta Belum Mengisi Umpan Balik -->
+        <section id="feedback-completion-section" class="report-section">
+            <h3><i class="fas fa-comment-slash text-info"></i> Peserta Belum Mengisi Umpan Balik</h3>
+            <p class="text-muted small">Daftar ini menunjukkan peserta yang telah berpartisipasi dalam ujian (memiliki nilai) tetapi belum menyerahkan formulir umpan balik.</p>
+            
+            <div class="row mb-4 g-3 no-print">
+                <div class="col-md-6">
+                    <label for="filter-nama-feedback-completion" class="form-label">Cari Nama Peserta:</label>
+                    <input type="text" id="filter-nama-feedback-completion" class="form-control" placeholder="Ketik nama untuk memfilter...">
+                </div>
+                <div class="col-md-6">
+                    <label for="filter-sesi-feedback-completion" class="form-label">Filter Sesi:</label>
+                    <select id="filter-sesi-feedback-completion" class="form-select">
+                        <option value="">Semua Sesi</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>NIM</th>
+                            <th>Nama Peserta</th>
+                            <th class="text-center">Sesi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-feedback-completion-body"></tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Section: Analisis Ujian -->
+        <section id="analysis-section" class="report-section">
+            <h3><i class="fas fa-chart-line text-primary"></i> Analisis Performa Ujian</h3>
+            <div class="row g-5">
+                <div class="col-lg-12">
+                    <h5><i class="fas fa-chart-bar text-primary"></i> Analisis Nilai per Station (Klik bar untuk memfilter tabel di atas)</h5>
+                    <p class="text-muted small">Grafik ini membandingkan rata-rata nilai peserta (biru) dengan batas lulus yang dihitung (merah) untuk setiap stasiun.</p>
+                    <canvas id="station-analytics-chart" style="cursor: pointer;"></canvas>
+                    <img class="chart-image-print" id="station-analytics-chart-img" alt="Grafik Analisis Stasiun">
+                </div>
+                <div class="col-lg-12">
+                    <h5><i class="fas fa-chart-bar text-danger"></i> Analisis Kesulitan Kriteria Rubrik (15 Terendah)</h5>
+                    <p class="text-muted small">Grafik ini menyorot kriteria penilaian spesifik dari berbagai stasiun di mana peserta secara kolektif mendapatkan skor terendah. Ini sangat berguna untuk evaluasi kurikulum.</p>
+                    <canvas id="rubric-difficulty-chart"></canvas>
+                    <img class="chart-image-print" id="rubric-difficulty-chart-img" alt="Grafik Kesulitan Rubrik">
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Analisis Lanjutan -->
+        <section id="advanced-analysis-section" class="report-section">
+            <h3><i class="fas fa-microscope text-primary"></i> Analisis Lanjutan</h3>
+            
+            <div id="session-analysis-container">
+                <h5><i class="fas fa-layer-group text-primary"></i> Perbandingan Kinerja Antar Sesi</h5>
+                <p class="text-muted small">Grafik ini membandingkan rata-rata skor antar sesi ujian untuk melihat konsistensi. Analisis ini memerlukan data 'sesi' pada setiap peserta di backend.</p>
+                <div class="row g-4 align-items-center">
+                    <div class="col-lg-8"><canvas id="session-comparison-chart"></canvas></div>
+                    <div class="col-lg-4"><div class="table-responsive"><table class="table table-bordered"><thead><tr class="table-light"><th>Sesi</th><th>Jml Peserta</th><th>Rerata Nilai</th></tr></thead><tbody id="session-summary-table"></tbody></table></div></div>
+                </div>
+                <img class="chart-image-print" id="session-comparison-chart-img" alt="Grafik Perbandingan Sesi">
+            </div>
+
+            <div id="examiner-analysis-container" class="mt-5">
+                <h5><i class="fas fa-user-check text-primary"></i> Analisis Kinerja Penguji (Klik bar untuk detail)</h5>
+                <p class="text-muted small">Menganalisis rata-rata nilai dan standar deviasi yang diberikan oleh setiap penguji untuk mengidentifikasi potensi outlier (penguji yang terlalu ketat atau longgar). Analisis ini memerlukan data 'pengujiId' pada setiap data penilaian di backend.</p>
+                <div class="row g-4">
+                    <div class="col-12"><canvas id="examiner-performance-chart" style="cursor: pointer;"></canvas></div>
+                    <div class="col-12"><div class="table-responsive"><table class="table table-striped table-hover"><thead><tr class="table-light"><th>Nama Penguji</th><th>Jml Penilaian</th><th>Rerata Nilai (%)</th><th>Std. Deviasi</th></tr></thead><tbody id="examiner-performance-table"></tbody></table></div></div>
+                </div>
+                <img class="chart-image-print" id="examiner-performance-chart-img" alt="Grafik Kinerja Penguji">
+            </div>
+
+            <div id="gpr-correlation-container" class="mt-5">
+                <h5><i class="fas fa-crosshairs text-primary"></i> Korelasi GPR vs Nilai Rubrik</h5>
+                <p class="text-muted small">Scatter plot ini menunjukkan hubungan antara Global Performance Rating (GPR) yang bersifat subjektif dengan nilai akhir stasiun yang dihitung dari rubrik. Idealnya, titik-titik akan membentuk tren naik dari kiri bawah ke kanan atas.</p>
+                <canvas id="gpr-correlation-chart" style="max-height: 450px;"></canvas>
+                <img class="chart-image-print" id="gpr-correlation-chart-img" alt="Grafik Korelasi GPR">
+            </div>
+
+            <div id="differentiating-rubric-container" class="mt-5">
+                <h5><i class="fas fa-magnifying-glass-chart text-primary"></i> Kriteria Rubrik Paling Membedakan (Top 15)</h5>
+                <p class="text-muted small">Berbeda dari kriteria tersulit, grafik ini menampilkan kriteria dengan variasi nilai tertinggi. Kriteria ini paling efektif dalam membedakan antara peserta dengan kompetensi tinggi dan rendah, menjadikannya indikator kunci untuk evaluasi.</p>
+                <canvas id="differentiating-rubric-chart"></canvas>
+                <img class="chart-image-print" id="differentiating-rubric-chart-img" alt="Grafik Kriteria Pembeda">
+            </div>
+        </section>
+        
+        <!-- NEW Section: Psychometric Analysis -->
+        <section id="psychometric-analysis-section" class="report-section">
+            <h3><i class="fas fa-diagnoses text-primary"></i> Analisis Psikometrik & Keandalan Stasiun</h3>
+            <p class="text-muted small">Analisis ini mengukur kualitas dan keandalan (reliabilitas) dari setiap stasiun ujian. Keandalan, yang diukur dengan <strong>Cronbach's Alpha</strong>, menunjukkan sejauh mana kriteria-kriteria penilaian (rubrik) dalam satu stasiun secara konsisten mengukur kompetensi yang sama. Nilai Alpha yang tinggi (biasanya > 0.7) menandakan bahwa stasiun tersebut merupakan alat ukur yang andal dan konsisten untuk menilai peserta.</p>
+            
+            <h4>Ringkasan Keandalan Stasiun (Cronbach's Alpha)</h4>
+            <div class="table-responsive mb-4">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nama Stasiun</th>
+                            <th class="text-center">Jumlah Item Rubrik</th>
+                            <th class="text-center">Cronbach's Alpha</th>
+                            <th class="text-center">Interpretasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cronbach-alpha-summary-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- BARU: Section Distribusi Penguji per Station -->
+        <section id="examiner-station-distribution-section" class="report-section">
+            <h3><i class="fas fa-sitemap text-primary"></i> Analisis Distribusi Tugas Penguji</h3>
+            <p class="text-muted small">Bagian ini merinci penguji yang bertugas di setiap stasiun, beserta jumlah penilaian dan rata-rata nilai yang mereka berikan di stasiun tersebut. Ini berguna untuk memverifikasi distribusi tugas dan konsistensi penilaian. Analisis ini memerlukan data 'pengujiId' pada setiap data penilaian.</p>
+            <div id="examiner-distribution-accordion" class="accordion">
+                <div class="analysis-placeholder"><p>Data distribusi penguji akan ditampilkan di sini setelah ditarik.</p></div>
+            </div>
+        </section>
+
+        <!-- Section: Rekapan Feedback -->
+        <section id="feedback-section" class="report-section">
+            <h3><i class="fas fa-comment-dots text-primary"></i> Rekapan Umpan Balik Peserta</h3>
+            <div class="row g-4">
+                <div class="col-12">
+                    <h5>Distribusi Rating Kepuasan per Stasiun</h5>
+                    <div class="row g-4" id="feedback-pie-charts-container">
+                         <div class="col-12"><div class="analysis-placeholder"><p>Data umpan balik akan ditampilkan di sini setelah ditarik.</p></div></div>
+                    </div>
+                </div>
+                <div class="col-12 mt-4">
+                    <h5>Komentar & Saran Tertulis</h5>
+                     <div class="accordion" id="feedback-comments-accordion">
+                         <div class="analysis-placeholder"><p>Komentar tertulis akan ditampilkan di sini.</p></div>
+                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BARU: Section Rekomendasi Akademik -->
+        <section id="academic-recommendations-section" class="report-section">
+            <h3><i class="fas fa-graduation-cap text-primary"></i> Rekomendasi Akademik & Tindak Lanjut</h3>
+            <p class="text-muted small">Berikut adalah ringkasan dan rekomendasi yang dihasilkan secara otomatis berdasarkan analisis data OSCE secara keseluruhan.</p>
+            <div id="recommendations-content" class="mt-4">
+                <div class="analysis-placeholder"><p>Rekomendasi akan dibuat di sini setelah data dianalisis.</p></div>
+            </div>
+            
+            <div class="mt-5 pt-4 border-top">
+                <h5><i class="fas fa-sticky-note text-warning"></i> Catatan untuk Panitia & Penguji</h5>
+                <textarea id="admin-report-notes" class="form-control mt-2 no-print" rows="4" placeholder="Ketik catatan tambahan di sini..."></textarea>
+                <div id="admin-report-notes-display" class="d-print-block mt-2 font-italic" style="display: none; border-left: 3px solid #ccc; padding-left: 1rem;">
+                    <!-- Akan diisi oleh nilai textarea saat print -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="signature-section container py-5">
+        <div class="row text-center" style="margin-top: 5rem; page-break-inside: avoid;">
+            <div class="col-6">
+                <!-- Kolom kiri untuk stempel -->
+            </div>
+            <div class="col-6">
+                <p>Waikabubak, <span id="signature-date"></span></p>
+                <p id="signature-position">Koordinator OSCE</p>
+                <div class="signature-space my-5">
+                    <!-- Ruang untuk tanda tangan basah & stempel -->
+                </div>
+                <p class="fw-bold" id="signature-name" style="text-decoration: underline;">(Nama Koordinator)</p>
+                <p>NIP. <span id="signature-nip">(NIP Koordinator)</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="text-center py-4 mt-4 bg-light no-print">
+        <p class="text-muted small mb-0">Laporan ini dibuat secara otomatis oleh OSCE App V2.0 © 2025 - Develop by Mas Andy</p>
+    </footer>
+
+    <!-- Modal for Individual Report -->
+    <div class="modal fade" id="individualReportModal" tabindex="-1" aria-labelledby="individualReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header no-print">
+                    <h5 class="modal-title" id="individualReportModalLabel">Laporan Individual Peserta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="individualReportBody">
+                    <!-- Content will be injected by JS -->
+                </div>
+                <div class="modal-footer no-print">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Cetak Laporan Ini</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Examiner Details -->
+    <div class="modal fade" id="examinerDetailModal" tabindex="-1" aria-labelledby="examinerDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="examinerDetailModalLabel">Detail Penilaian Penguji</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="examinerDetailBody">
+                    <!-- Content will be injected by JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// =================================================================
+// KONFIGURASI DAN STATE GLOBAL
+// =================================================================
+const SUPABASE_URL = "https://mxehzlpacayivvmehhet.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_M2lEt8Slh_iuWcb2U8_mhg_vCJ1NVVB"; 
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let osceData = {};
+let chartInstances = {};
+let activeStationFilter = null; // For chart click interaction
+let individualReportModal, examinerDetailModal; // Bootstrap modal instances
+
+// =================================================================
+// FUNGSI UTAMA & ALUR APLIKASI
+// =================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Main buttons
+    document.getElementById('pull-data-btn').addEventListener('click', fetchData);
+    document.getElementById('print-btn').addEventListener('click', printReport);
+    document.getElementById('download-pdf-btn').addEventListener('click', downloadAsPdf);
+    
+    // Kelulusan section controls
+    document.getElementById('apply-passing-grade-btn').addEventListener('click', applyPassingGradeAndRender);
+    document.getElementById('export-kelulusan-csv').addEventListener('click', () => exportTableToCSV('#pass-fail-section table', 'Daftar_Kelulusan_Peserta.csv'));
+    
+    // Flexible passing grade UI logic
+    document.getElementById('rule-min-stations-check').addEventListener('change', (e) => {
+        document.getElementById('rule-min-stations-count').disabled = !e.target.checked;
+    });
+    document.getElementById('rule-critical-stations-check').addEventListener('change', (e) => {
+        document.querySelectorAll('#critical-stations-list input[type="checkbox"]').forEach(cb => cb.disabled = !e.target.checked);
+    });
+    
+    // Filters and table interactions
+    document.getElementById('filter-nama-peserta').addEventListener('input', renderCollectiveResultsTable);
+    document.getElementById('filter-sesi-peserta').addEventListener('change', renderCollectiveResultsTable);
+    document.getElementById('filter-status-peserta').addEventListener('change', renderCollectiveResultsTable);
+    document.getElementById('collective-hasil-body').addEventListener('click', handleCollectiveTableClick);
+    document.getElementById('reset-station-filter').addEventListener('click', resetStationFilter);
+
+    // Filters for other sections
+    document.getElementById('filter-nama-incomplete').addEventListener('input', renderIncompleteAssessmentTable);
+    document.getElementById('filter-sesi-incomplete').addEventListener('change', renderIncompleteAssessmentTable);
+    document.getElementById('filter-nama-duplicate').addEventListener('input', renderDuplicateAssessmentTable);
+    document.getElementById('filter-sesi-duplicate').addEventListener('change', renderDuplicateAssessmentTable);
+    document.getElementById('filter-nama-feedback-completion').addEventListener('input', renderFeedbackCompletionTable);
+    document.getElementById('filter-sesi-feedback-completion').addEventListener('change', renderFeedbackCompletionTable);
+    
+    // Initialize modals
+    individualReportModal = new bootstrap.Modal(document.getElementById('individualReportModal'));
+    examinerDetailModal = new bootstrap.Modal(document.getElementById('examinerDetailModal'));
+
+    fetchData(); 
+});
+
+async function fetchData() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+    const pullButton = document.getElementById('pull-data-btn');
+    
+    loadingText.textContent = 'Menarik Data dari Database...';
+    loadingOverlay.style.display = 'flex';
+    pullButton.disabled = true;
+    pullButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Menarik Data...`;
+
+    try {
+        const tables = ['peserta', 'penguji', 'stations', 'scores', 'feedback', 'config'];
+        const results = await Promise.all(tables.map(table => 
+            supabaseClient.from(table).select('*')
+        ));
+        
+        const rawData = {};
+        tables.forEach((table, i) => {
+            if (results[i].error) throw results[i].error;
+            rawData[table] = results[i].data || [];
+        });
+
+        // Map config KV to object
+        const configObj = {};
+        rawData['config'].forEach(item => {
+            configObj[item.key] = item.value;
+        });
+
+        osceData = { ...rawData, config: configObj };
+        renderAllReports();
+
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        loadingText.textContent = `Error: ${error.message}`;
+        alert(`Gagal menarik data dari database: ${error.message}`);
+    } finally {
+        loadingOverlay.style.display = 'none';
+        pullButton.disabled = false;
+        pullButton.innerHTML = `<i class="fas fa-sync-alt"></i> Tarik Data Terbaru`;
+    }
+}
+
+// =================================================================
+// PERBAIKAN BUG 1: Fungsi ini sekarang akan merender ulang statistik ringkasan dan tabel hasil.
+// =================================================================
+async function applyPassingGradeAndRender() {
+    const method = document.getElementById('passing-method-input').value;
+    const grade = parseInt(document.getElementById('passing-grade-input').value);
+
+    if (isNaN(grade) || grade < 1 || grade > 100) {
+        return alert("Batas lulus tidak valid. Masukkan angka antara 1 dan 100.");
+    }
+
+    // Update state lokal agar renderSummaryStats menggunakan nilai terbaru
+    if (!osceData.config) osceData.config = {};
+    osceData.config['osce_passing_method'] = method;
+    osceData.config['osce_collective_passing_grade'] = grade;
+
+    const applyBtn = document.getElementById('apply-passing-grade-btn');
+    const originalText = applyBtn.innerHTML;
+    
+    try {
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...`;
+
+        // Push ke Supabase agar tersimpan permanen (sama dengan dashboard)
+        const { error } = await supabaseClient.from('config').upsert([
+            { key: 'osce_passing_method', value: method, updated_at: new Date().toISOString() },
+            { key: 'osce_collective_passing_grade', value: grade, updated_at: new Date().toISOString() }
+        ]);
+
+        if (error) throw error;
+        
+        // Memanggil render memastikan semua elemen UI diperbarui
+        renderSummaryStats();
+        renderCollectiveResultsTable();
+        
+        alert("Pengaturan kelulusan berhasil disimpan ke database dan diterapkan sebagai acuan utama.");
+    } catch (e) {
+        console.error("Sync Error:", e);
+        alert("Terapkan lokal berhasil, namun gagal simpan ke database: " + e.message);
+        
+        // Tetap render lokal jika gagal sync agar user bisa melihat sementara
+        renderSummaryStats();
+        renderCollectiveResultsTable();
+    } finally {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = originalText;
+    }
+}
+
+function renderAllReports() {
+    Object.values(chartInstances).forEach(chart => chart.destroy());
+    chartInstances = {};
+
+    document.getElementById('report-date').textContent = `Laporan Dibuat pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'long' })}`;
+    
+    populateAllSessionFilters();
+    populateCriticalStationsList();
+    renderDataIntegritySummary();
+
+    // Renders
+    renderSummaryStats(true);
+    renderCollectiveResultsTable();
+    renderIncompleteAssessmentTable();
+    renderDuplicateAssessmentTable(); 
+    renderEarlyAssessmentTable();
+    renderRemedialTable();
+    renderFeedbackCompletionTable();
+    renderStationAnalyticsChart();
+    renderRubricDifficultyChart();
+    renderFeedbackCharts();
+    renderSignature();
+
+    // Advanced Analysis Renders
+    renderSessionComparison();
+    renderExaminerAnalysis();
+    renderGprCorrelation();
+    renderDifferentiatingRubrics();
+
+    // New Feature Renders
+    renderPsychometricAnalysis();
+    renderExaminerStationDistribution();
+    renderAcademicRecommendations();
+}
+
+function handleCollectiveTableClick(event) {
+    const detailButton = event.target.closest('.toggle-details-btn');
+    const reportButton = event.target.closest('.individual-report-btn');
+
+    if (detailButton) {
+        toggleParticipantDetails(detailButton);
+    } else if (reportButton) {
+        const pesertaId = reportButton.closest('tr').dataset.pesertaId;
+        generateAndShowIndividualReport(pesertaId);
+    }
+}
+
+// =================================================================
+// FUNGSI PRINT, PDF & CSV
+// =================================================================
+function prepareChartsForPrint() {
+    Object.keys(chartInstances).forEach(key => {
+        const canvas = document.getElementById(key);
+        if (canvas && chartInstances[key]) {
+            const oldImg = document.getElementById(`${key}-img`);
+            if (oldImg) oldImg.remove();
+            
+            const img = new Image();
+            img.src = chartInstances[key].toBase64Image('image/png', 1.0);
+            img.className = 'chart-image-print';
+            img.id = `${key}-img`;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            canvas.parentNode.appendChild(img);
+        }
+    });
+}
+
+function printReport() {
+    // Copy notes to display div
+    const notes = document.getElementById('admin-report-notes').value;
+    const displayDiv = document.getElementById('admin-report-notes-display');
+    if (notes) {
+        displayDiv.innerHTML = `<p style="white-space: pre-wrap;">${notes}</p>`;
+        displayDiv.style.display = 'block';
+    } else {
+        displayDiv.style.display = 'none';
+    }
+
+    prepareChartsForPrint();
+    setTimeout(() => { window.print(); }, 500);
+}
+
+function downloadAsPdf() {
+    const downloadButton = document.getElementById('download-pdf-btn');
+    const originalContent = downloadButton.innerHTML;
+    
+    // 1. Handle Notes visibility (like print)
+    const notes = document.getElementById('admin-report-notes').value;
+    const displayDiv = document.getElementById('admin-report-notes-display');
+    if (notes) {
+        displayDiv.innerHTML = `<p style="white-space: pre-wrap;">${notes}</p>`;
+        displayDiv.style.display = 'block';
+    }
+
+    // 2. Prepare charts
+    prepareChartsForPrint();
+
+    downloadButton.disabled = true;
+    downloadButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Membuat PDF...`;
+
+    // 3. Add class to body to trigger specific styling
+    document.body.classList.add('pdf-rendering');
+
+    setTimeout(() => {
+        const element = document.body;
+        const reportDate = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+        
+        const opt = {
+            margin:       [10, 0, 10, 0], // Reduced margin for cleaner full-width feel
+            filename:     `Laporan_OSCE_Komprehensif_${reportDate}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                windowWidth: 1200 // Force a specific width for consistent layout
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => {
+            document.body.classList.remove('pdf-rendering');
+            if (!notes) displayDiv.style.display = 'none';
+            downloadButton.disabled = false;
+            downloadButton.innerHTML = originalContent;
+        }).catch(err => {
+            console.error("PDF Errror:", err);
+            document.body.classList.remove('pdf-rendering');
+            downloadButton.disabled = false;
+            downloadButton.innerHTML = originalContent;
+            alert("Terjadi kesalahan saat membuat PDF: " + err.message);
+        });
+    }, 800);
+}
+
+function exportTableToCSV(tableSelector, filename) {
+    const table = document.querySelector(tableSelector);
+    if (!table) return;
+    let csv = [];
+    table.querySelectorAll("tr").forEach(row => {
+        if(row.classList.contains('details-row')) return; // Skip detail rows
+        const rowData = [];
+        row.querySelectorAll("td, th").forEach(col => {
+            if(col.querySelector('button')) return; // Skip button column
+            let data = col.innerText;
+            rowData.push(`"${data.replace(/"/g, '""')}"`);
+        });
+        csv.push(rowData.join(","));
+    });
+    const link = document.createElement("a");
+    link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv.join("\n"));
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function renderSignature() {
+    const { config } = osceData;
+    const certSettings = config?.certSettings || {};
+    
+    document.getElementById('signature-date').textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    const signatureName = certSettings.koordinatorName || config?.koordinatorOsce?.nama || '(Nama Koordinator)';
+    const signatureNip = certSettings.koordinatorNip || config?.koordinatorOsce?.nip || '(NIP Koordinator)';
+    const signatureTitle = certSettings.koordinatorTitle || 'Koordinator OSCE';
+    
+    document.getElementById('signature-name').textContent = signatureName;
+    document.getElementById('signature-nip').textContent = signatureNip;
+    document.getElementById('signature-position').textContent = signatureTitle;
+}
+
+// =================================================================
+// FUNGSI KALKULASI STATISTIK
+// =================================================================
+function calculateWeightedScore(scoreObject, station) {
+    if (!station || !station.rubric || !scoreObject)
+        return { achieved: 0, max: 0, percentage: 0 };
+    let achievedScore = 0;
+    let maxPossibleScore = 0;
+    // Handle both raw Supabase format and internal score format
+    const scoreList = scoreObject.scores || [];
+    scoreList.forEach((item) => {
+        const rubricItem = station.rubric.find((r) => r.id === item.rubricId);
+        if (rubricItem) {
+            const weight = rubricItem.bobot || 1;
+            achievedScore += item.score * weight;
+            maxPossibleScore += rubricItem.maxScore * weight;
+        }
+    });
+    const percentage = maxPossibleScore > 0 ? (achievedScore / maxPossibleScore) * 100 : 0;
+    return { achieved: achievedScore, max: maxPossibleScore, percentage };
+}
+
+/**
+ * Mendapatkan daftar nilai terbaik (deduplikasi per peserta/stasiun)
+ */
+function getBestScoresPerParticipantPerStation(data) {
+    const { scores = [], stations = [] } = data;
+    const bestScoresMap = {};
+    scores.forEach((score) => {
+        const key = `${score.pesertaId}_${score.stationId}`;
+        const station = stations.find((s) => s.id === score.stationId);
+        if (!station) return;
+        const { percentage } = calculateWeightedScore(score, station);
+        if (!bestScoresMap[key] || percentage > bestScoresMap[key].percentage) {
+            bestScoresMap[key] = { score, percentage };
+        }
+    });
+    return Object.values(bestScoresMap).map((item) => item.score);
+}
+
+function standardDeviation(array) {
+    if (array.length < 2) return 0;
+    const n = array.length;
+    const mean = array.reduce((a, b) => a + b) / n;
+    return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n);
+}
+
+function variance(array) {
+    if (array.length < 2) return 0;
+    const n = array.length;
+    const mean = array.reduce((a,b) => a+b, 0) / n;
+    return array.map(x => Math.pow(x-mean, 2)).reduce((a,b) => a+b,0) / (n-1);
+}
+
+function pearsonCorrelation(x, y) {
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    const n = x.length;
+    for (let i = 0; i < n; i++) {
+        sumX += x[i];
+        sumY += y[i];
+        sumXY += x[i] * y[i];
+        sumX2 += x[i] * x[i];
+        sumY2 += y[i] * y[i];
+    }
+    const numerator = n * sumXY - sumX * sumY;
+    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    if (denominator === 0) return 0;
+    return numerator / denominator;
+}
+
+
+function linearRegression(data) {
+    if (!data || data.length < 2) return null;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    const n = data.length;
+    data.forEach(([x, y]) => { sumX += x; sumY += y; sumXY += x * y; sumXX += x * x; });
+    const denominator = (n * sumXX - sumX * sumX);
+    if (denominator === 0) return null;
+    const slope = (n * sumXY - sumX * sumY) / denominator;
+    const intercept = (sumY - slope * sumX) / n;
+    return { slope, intercept };
+}
+
+function calculateBrmPassingScores() {
+    const stations = osceData.stations || [];
+    const scores = osceData.scores || [];
+    const brmScores = {};
+    const bestScores = getBestScoresPerParticipantPerStation(osceData);
+    stations.forEach(station => {
+        const stationScoresData = bestScores
+            .filter(s => s.stationId === station.id && s.globalPerformance)
+            .map(s => [s.globalPerformance, calculateWeightedScore(s, station).percentage]);
+        const regression = linearRegression(stationScoresData);
+        if (regression) {
+            brmScores[station.id] = Math.max(0, Math.min(100, regression.intercept + regression.slope * 2.0));
+        } else {
+            brmScores[station.id] = station.passingGrade || 75;
+        }
+    });
+    return brmScores;
+}
+
+function calculateCronbachsAlpha(dataMatrix) {
+    // dataMatrix is an array of arrays: [[p1_item1, p1_item2], [p2_item1, p2_item2], ...]
+    const numParticipants = dataMatrix.length;
+    if (numParticipants < 2) return { alpha: NaN, k: 0 };
+    const k = dataMatrix[0].length; // number of items
+    if (k < 2) return { alpha: NaN, k };
+    
+    // Calculate sum of item variances
+    let sumOfItemVariances = 0;
+    for (let i = 0; i < k; i++) {
+        const itemScores = dataMatrix.map(row => row[i]);
+        sumOfItemVariances += variance(itemScores);
+    }
+    
+    // Calculate variance of total scores
+    const totalScores = dataMatrix.map(row => row.reduce((a, b) => a + b, 0));
+    const varianceOfTotalScores = variance(totalScores);
+    
+    if (varianceOfTotalScores === 0) return { alpha: NaN, k };
+    
+    const alpha = (k / (k - 1)) * (1 - (sumOfItemVariances / varianceOfTotalScores));
+    return { alpha, k };
+}
+
+
+// =================================================================
+// FUNGSI RENDERING BAGIAN LAPORAN
+// =================================================================
+function renderDataIntegritySummary() {
+    const { peserta = [], stations = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const participantIds = new Set(peserta.map(p => String(p.id)));
+    const scoredParticipantIds = new Set(scores.map(s => String(s.pesertaId)));
+    
+    const unscored = peserta.filter(p => !scoredParticipantIds.has(String(p.id))).length;
+    const orphans = scores.filter(s => !participantIds.has(String(s.pesertaId))).length;
+    const configWarns = stations.filter(s => !s.rubric || s.rubric.length === 0).length;
+
+    if (document.getElementById('unscored-participants')) document.getElementById('unscored-participants').textContent = unscored;
+    if (document.getElementById('orphan-scores')) document.getElementById('orphan-scores').textContent = orphans;
+    if (document.getElementById('config-warnings')) document.getElementById('config-warnings').textContent = configWarns;
+
+    const totalIssues = unscored + orphans + configWarns;
+    const statusCardValue = document.getElementById('integrity-ok-count');
+    if (statusCardValue) {
+        const statCard = statusCardValue.closest('.stat-card');
+        const statusCardIcon = statCard ? statCard.querySelector('.stat-card-icon') : null;
+        
+        if (totalIssues === 0) {
+            statusCardValue.textContent = 'Baik';
+            statusCardValue.style.color = 'var(--success-color)';
+            if (statusCardIcon) {
+                statusCardIcon.className = 'stat-card-icon bg-success text-white';
+                statusCardIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+            }
+        } else {
+            statusCardValue.textContent = 'Peringatan';
+            statusCardValue.style.color = 'var(--warning-color)';
+            if (statusCardIcon) {
+                statusCardIcon.className = 'stat-card-icon bg-warning text-white';
+                statusCardIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            }
+        }
+    }
+}
+
+function renderSummaryStats(forceSync = false) {
+    const { peserta = [], penguji = [], stations = [], feedback = [], config = {} } = osceData;
+    const bestScores = getBestScoresPerParticipantPerStation(osceData);
+    
+    const excludedStationIds = config.osce_excluded_stations || [];
+    const activeStations = stations.filter(s => !excludedStationIds.includes(s.id));
+    
+    // Helper for safe element text setting
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    
+    setEl('total-peserta', peserta.length);
+    setEl('total-penguji', penguji.length);
+    setEl('total-station', stations.length);
+    setEl('excluded-station-count', excludedStationIds.length);
+    setEl('total-penilaian', bestScores.length);
+    setEl('feedback-submitted', feedback.length);
+
+    // Update report date header
+    const certSettings = config?.certSettings || {};
+    const reportHeaderDate = document.getElementById('report-date');
+    if (reportHeaderDate) {
+        reportHeaderDate.textContent = `Tanggal Ujian: ${certSettings.examDate || 'Belum diatur'}`;
+    }
+
+    const uniqueSessions = new Set(peserta.map(p => p.sesi).filter(s => s != null && s !== ''));
+    setEl('total-sessions', uniqueSessions.size);
+
+    const gprScores = bestScores.map(s => s.globalPerformance).filter(gpr => typeof gpr === 'number' && gpr >= 1 && gpr <= 4);
+    
+    let defaultPassingGrade = 75;
+    let avgGprValue = 'N/A';
+    let gprConversionValue = 'N/A';
+
+    if (gprScores.length > 0) {
+        const avgGpr = gprScores.reduce((sum, val) => sum + val, 0) / gprScores.length;
+        const gprConversion = (avgGpr / 4 * 100);
+        avgGprValue = avgGpr.toFixed(2);
+        gprConversionValue = `${gprConversion.toFixed(1)}%`;
+        defaultPassingGrade = Math.round(gprConversion); 
+    }
+    setEl('cohort-average-gpr', avgGprValue);
+    setEl('cohort-gpr-conversion', gprConversionValue);
+    
+    // Set value from config or default conversion
+    const passingGradeInput = document.getElementById('passing-grade-input');
+    const passingMethodInput = document.getElementById('passing-method-input');
+    
+    // Check if we have a saved value in Supabase config first
+    const savedPassingGrade = osceData.config ? osceData.config['osce_collective_passing_grade'] : null;
+    const savedPassingMethod = osceData.config ? osceData.config['osce_passing_method'] : 'percentage';
+    
+    if (passingGradeInput.value === '' || !passingGradeInput.dataset.initialized || forceSync) {
+        if (savedPassingGrade !== undefined && savedPassingGrade !== null) {
+            passingGradeInput.value = savedPassingGrade;
+        } else {
+            passingGradeInput.value = defaultPassingGrade;
+        }
+        passingMethodInput.value = savedPassingMethod;
+        passingGradeInput.dataset.initialized = 'true';
+    }
+
+
+    const processedData = processAllParticipantScores();
+    const evaluatedParticipants = processedData.filter(p => p.avgScore !== null);
+
+    const scoredParticipants = processedData.filter(p => p.avgScore !== null);
+    const passCount = scoredParticipants.filter(p => p.isPassed).length;
+    const failCount = scoredParticipants.length - passCount;
+    const cohortAverage = scoredParticipants.length > 0 ? (scoredParticipants.reduce((sum, p) => sum + p.avgScore, 0) / scoredParticipants.length) : 0;
+    
+    const noScoreCount = peserta.length - scoredParticipants.length;
+    // Incomplete = has scores, but attended stations < total stations
+    const incompleteCount = scoredParticipants.filter(p => p.attendedStationsCount < p.totalStations).length;
+
+    setEl('cohort-pass-count', passCount);
+    setEl('cohort-fail-count', failCount);
+    setEl('cohort-incomplete-count', incompleteCount);
+    setEl('cohort-no-score-count', noScoreCount);
+    setEl('cohort-average-score', `${cohortAverage.toFixed(2)}%`);
+
+    // POPULATE PRINT SUMMARY TABLE
+    const dateStr = certSettings.examDate || 'Belum diatur';
+    const methodStr = savedPassingMethod === 'gpr' ? 'BRM (GPR Based)' : 'Collective Percentage';
+    const activeStatCount = activeStations.length;
+    const exclStatCount = excludedStationIds.length;
+    
+    setEl('print-tanggal-pelaksanaan', dateStr);
+    setEl('print-total-peserta', `${peserta.length} orang`);
+    setEl('print-total-sesi', `${uniqueSessions.size} Sesi`);
+    setEl('print-total-stasiun', `${activeStatCount} Aktif / ${exclStatCount} Libur`);
+    setEl('print-lulus-count', `${passCount} (${(scoredParticipants.length > 0 ? (passCount/scoredParticipants.length*100) : 0).toFixed(1)}%)`);
+    setEl('print-gagal-count', `${failCount} (${(scoredParticipants.length > 0 ? (failCount/scoredParticipants.length*100) : 0).toFixed(1)}%)`);
+    setEl('print-incomplete-count', `${noScoreCount + incompleteCount} orang`);
+    setEl('print-average-score', `${cohortAverage.toFixed(2)}%`);
+    setEl('print-average-gpr', avgGprValue);
+    setEl('print-passing-method', methodStr);
+    setEl('print-passing-grade', `${passingGradeInput.value}%`);
+    const integrityEl = document.getElementById('integrity-ok-count');
+    setEl('print-integrity-status', integrityEl ? integrityEl.textContent : '-');
+
+    if (chartInstances['pass-fail-chart']) chartInstances['pass-fail-chart'].destroy();
+    const ctx = document.getElementById('pass-fail-chart').getContext('2d');
+    chartInstances['pass-fail-chart'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Lulus', 'Tidak Lulus', 'Belum Ujian'],
+            datasets: [{ 
+                data: [passCount, failCount, noScoreCount], 
+                backgroundColor: [ 'rgba(25, 135, 84, 0.9)', 'rgba(220, 53, 69, 0.9)', 'rgba(108, 117, 125, 0.9)'], 
+                borderColor: ['var(--card-bg)'], 
+                borderWidth: 4 
+            }]
+        },
+        options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { padding: 20, font: { family: 'Poppins' } } }, title: { display: true, text: 'Status Progres & Kelulusan', font: { size: 14, family: 'Poppins' } } } }
+    });
+}
+
+function populateAllSessionFilters() {
+    const { peserta = [] } = osceData;
+    const sessions = [...new Set(peserta.map(p => p.sesi).filter(s => s != null && s !== ''))].sort((a,b) => String(a).localeCompare(String(b)));
+    
+    const filterSelects = [
+        document.getElementById('filter-sesi-peserta'),
+        document.getElementById('filter-sesi-incomplete'),
+        document.getElementById('filter-sesi-duplicate'),
+        document.getElementById('filter-sesi-feedback-completion')
+    ];
+    
+    filterSelects.forEach(selectElement => {
+        if (!selectElement) return;
+        while (selectElement.options.length > 1) selectElement.remove(1);
+        sessions.forEach(session => {
+            const option = document.createElement('option');
+            option.value = session;
+            option.textContent = `Sesi ${session}`;
+            selectElement.appendChild(option);
+        });
+    });
+}
+
+function populateCriticalStationsList() {
+    const { stations = [] } = osceData;
+    const container = document.getElementById('critical-stations-list');
+    container.innerHTML = '';
+    if (stations.length === 0) {
+        container.innerHTML = '<span class="text-muted">Tidak ada stasiun tersedia.</span>';
+        return;
+    }
+    stations.forEach(station => {
+        container.innerHTML += `
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="crit-station-${station.id}" value="${station.id}" disabled>
+                <label class="form-check-label" for="crit-station-${station.id}">${station.name}</label>
+            </div>
+        `;
+    });
+}
+
+function processAllParticipantScores() {
+    const { peserta = [], stations = [] } = osceData;
+    const bestScores = getBestScoresPerParticipantPerStation(osceData);
+    
+    // Get rules from UI
+    const passingGrade = parseInt(document.getElementById('passing-grade-input').value) || 75;
+    const useMinStationsRule = document.getElementById('rule-min-stations-check').checked;
+    const minStationsCount = parseInt(document.getElementById('rule-min-stations-count').value) || 0;
+    const useCriticalStationsRule = document.getElementById('rule-critical-stations-check').checked;
+    const criticalStationIds = useCriticalStationsRule 
+        ? [...document.querySelectorAll('#critical-stations-list input:checked')].map(cb => cb.value) 
+        : [];
+    
+    const brmScores = calculateBrmPassingScores();
+    const excludedStationIds = (osceData.config['osce_excluded_stations'] || []).map(id => String(id));
+
+    return peserta.map(p => {
+        const pScores = bestScores.filter(s => 
+            String(s.pesertaId) === String(p.id) && 
+            !excludedStationIds.includes(String(s.stationId))
+        );
+        let avgScore = null;
+        let isPassed = false;
+        let stationScores = {};
+        let passedStationsCount = 0;
+
+        if (pScores.length > 0) {
+            let totalScore = 0;
+            pScores.forEach(score => {
+                const station = stations.find(s => String(s.id) === String(score.stationId));
+                if (station) {
+                    const { percentage } = calculateWeightedScore(score, station);
+                    totalScore += percentage;
+                    stationScores[station.id] = { name: station.name, score: percentage };
+                    
+                    const stationPassingGrade = brmScores[station.id] || station.passingGrade || 75;
+                    if (percentage >= stationPassingGrade) {
+                        passedStationsCount++;
+                    }
+                }
+            });
+            const averageScore = totalScore / pScores.length;
+            avgScore = averageScore;
+
+            // Determine pass status based on rules
+            const passingMethod = document.getElementById('passing-method-input').value;
+            let passedOverallAvg = false;
+            
+            if (passingMethod === "gpr") {
+                // Metode BRM (GPR Based): Kelulusan ditentukan oleh jumlah stasiun yang lulus
+                // Jika tidak ada aturan minimal stasiun, maka wajib lulus SEMUA stasiun.
+                const minRequired = useMinStationsRule ? minStationsCount : pScores.length;
+                passedOverallAvg = (passedStationsCount >= minRequired);
+            } else {
+                // Metode Persentase Kolektif: Perbandingan rata-rata nilai terhadap ambang batas tunggal
+                passedOverallAvg = (averageScore >= passingGrade);
+            }
+            
+            // Aturan tambahan tetap berlaku (jika diaktifkan)
+            let passedMinStations = !useMinStationsRule || (passedStationsCount >= minStationsCount);
+            let passedCriticalStations = !useCriticalStationsRule || criticalStationIds.every(id => {
+                const stationScore = stationScores[id];
+                if (!stationScore) return false; // Gagal jika stasiun kritis tidak diikuti
+                const stationPassingGrade = brmScores[id] || stations.find(s=>s.id==id)?.passingGrade || 75;
+                return stationScore.score >= stationPassingGrade;
+            });
+            
+            // Status Akhir: Wajib memenuhi acuan utama DAN aturan tambahan
+            isPassed = passedOverallAvg && passedMinStations && passedCriticalStations;
+        }
+        
+        return { ...p, stationScores, avgScore, isPassed, passedStationsCount, totalStations: stations.length, attendedStationsCount: pScores.length };
+    });
+}
+
+function renderCollectiveResultsTable() {
+    const tableBody = document.getElementById('collective-hasil-body');
+    
+    const filterText = document.getElementById('filter-nama-peserta').value.toLowerCase();
+    const filterSession = document.getElementById('filter-sesi-peserta').value;
+    const filterStatus = document.getElementById('filter-status-peserta').value;
+
+    const allProcessedData = processAllParticipantScores();
+
+    // Calculate rankings based on all evaluated participants
+    const rankedParticipants = allProcessedData
+        .filter(p => p.avgScore !== null)
+        .sort((a, b) => b.avgScore - a.avgScore);
+
+    const rankMap = new Map();
+    let lastScore = -1;
+    let lastRank = 0;
+    rankedParticipants.forEach((p, index) => {
+        // Handle ties: if score is same as previous, assign same rank
+        if (p.avgScore !== lastScore) {
+            lastRank = index + 1;
+            lastScore = p.avgScore;
+        }
+        rankMap.set(String(p.id), lastRank); // Use string ID for consistency
+    });
+
+    let filteredData = allProcessedData.filter(p => {
+        const nameMatch = p.nama.toLowerCase().includes(filterText);
+        const sessionMatch = !filterSession || String(p.sesi) === filterSession;
+        const statusMatch = !filterStatus || 
+            (filterStatus === 'lulus' && p.isPassed) || 
+            (filterStatus === 'gagal' && !p.isPassed && p.avgScore !== null);
+            
+        return nameMatch && sessionMatch && statusMatch;
+    });
+
+    const scoreHeader = document.getElementById('collective-table-score-header');
+    if (activeStationFilter) {
+        scoreHeader.textContent = `Nilai Stasiun: ${activeStationFilter.name} (%)`;
+        // Re-map data for station-specific view
+        filteredData = filteredData.map(p => ({
+            ...p,
+            displayScore: p.stationScores[activeStationFilter.id]?.score,
+        })).sort((a, b) => (b.displayScore ?? -1) - (a.displayScore ?? -1));
+    } else {
+        scoreHeader.textContent = 'Rata-rata Nilai (%)';
+        filteredData = filteredData.map(p => ({
+            ...p,
+            displayScore: p.avgScore
+        })).sort((a, b) => a.nama.localeCompare(b.nama));
+    }
+
+
+    tableBody.innerHTML = '';
+    if (filteredData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">Tidak ada data peserta yang cocok dengan filter.</td></tr>`;
+        return;
+    }
+
+    filteredData.forEach(p => {
+        let statusHtml = '<span class="badge bg-secondary">Belum Dinilai</span>';
+        let scoreHtml = 'N/A';
+        
+        if (p.avgScore !== null) {
+            statusHtml = `<span class="badge rounded-pill ${p.isPassed ? 'bg-success-subtle text-success-emphasis' : 'bg-danger-subtle text-danger-emphasis'}">${p.isPassed ? 'Lulus' : 'Tidak Lulus'}</span>`;
+        }
+        
+        if (p.displayScore !== undefined && p.displayScore !== null) {
+            scoreHtml = p.displayScore.toFixed(2);
+        }
+
+        const rank = rankMap.get(String(p.id)) || 'N/A';
+        const rankHtml = rank !== 'N/A' ? `<span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">${rank}</span>` : 'N/A';
+
+        tableBody.innerHTML += `
+            <tr data-peserta-id="${p.id}">
+                <td class="text-center no-print">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary toggle-details-btn py-0 px-2" title="Lihat Detail Nilai"><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-outline-info individual-report-btn py-0 px-2" title="Lihat Laporan Individual"><i class="fas fa-user"></i></button>
+                    </div>
+                </td>
+                <td>${p.nim}</td>
+                <td class="text-center">${rankHtml}</td>
+                <td><strong>${p.nama}</strong></td>
+                <td class="text-center">${p.sesi || 'N/A'}</td>
+                <td class="text-center fw-bold ${p.isPassed ? 'text-success' : 'text-danger'}">${scoreHtml}</td>
+                <td class="text-center">${p.avgScore !== null ? `${p.passedStationsCount} / ${p.totalStations}` : 'N/A'}</td>
+                <td class="text-center">${statusHtml}</td>
+            </tr>`;
+    });
+}
+
+
+function toggleParticipantDetails(button) {
+    const mainRow = button.closest('tr');
+    const tableBody = mainRow.parentElement;
+    const pesertaId = mainRow.dataset.pesertaId;
+    const existingDetailRow = tableBody.querySelector(`.details-row[data-details-for="${pesertaId}"]`);
+
+    tableBody.querySelectorAll('.details-row').forEach(row => {
+        if (row !== existingDetailRow) row.remove();
+    });
+    tableBody.querySelectorAll('.toggle-details-btn').forEach(btn => {
+        if (btn !== button) btn.innerHTML = '<i class="fas fa-plus"></i>';
+    });
+
+    if (existingDetailRow) {
+        existingDetailRow.remove();
+        button.innerHTML = '<i class="fas fa-plus"></i>';
+    } else {
+        const { peserta, scores = [], stations = [] } = osceData;
+        const pData = peserta.find(p => String(p.id) === pesertaId);
+        const pScores = scores.filter(s => String(s.pesertaId) === pesertaId);
+
+        if (!pData) {
+            // ... (error handling)
+            return;
+        }
+
+        const brmPassingScores = calculateBrmPassingScores();
+        const accordionId = `accordion-details-${pesertaId}`;
+        let accordionItems = '';
+
+        stations.sort((a, b) => a.name.localeCompare(b.name)).forEach(station => {
+            const score = pScores.find(s => String(s.stationId) === String(station.id));
+            if (score) {
+                const { percentage } = calculateWeightedScore(score, station);
+                const stationPassingGrade = brmPassingScores[station.id] || station.passingGrade || 75;
+                const isStationPassed = percentage >= stationPassingGrade;
+                
+                let rubricTableRows = (score.scores && station.rubric) ? station.rubric.map(rubricItem => {
+                    const scoreItem = score.scores.find(s => String(s.rubricId) === String(rubricItem.id));
+                    return `<tr><td>${rubricItem.criteria}</td><td class="text-center">${scoreItem ? scoreItem.score : 'N/A'}</td><td class="text-center">${rubricItem.maxScore}</td><td class="text-center">${rubricItem.bobot || 1}</td></tr>`;
+                }).join('') : `<tr><td colspan="4" class="text-center text-muted">Data rincian rubrik tidak tersedia.</td></tr>`;
+
+                accordionItems += `<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-detail-${pesertaId}-${station.id}"><strong>${station.name}</strong><span class="ms-auto me-3">Nilai: <span class="fw-bold ${isStationPassed ? 'text-success' : 'text-danger'}">${percentage.toFixed(2)}%</span></span></button></h2><div id="collapse-detail-${pesertaId}-${station.id}" class="accordion-collapse collapse" data-bs-parent="#${accordionId}"><div class="accordion-body"><h6 class="mb-3">Rincian Penilaian Rubrik</h6><table class="table table-sm table-bordered table-striped"><thead class="table-light"><tr><th>Kriteria</th><th class="text-center">Nilai</th><th class="text-center">Maks</th><th class="text-center">Bobot</th></tr></thead><tbody>${rubricTableRows}</tbody></table></div></div></div>`;
+            } else {
+                accordionItems += `<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed bg-light text-muted" type="button" disabled><strong>${station.name}</strong><span class="ms-auto me-3">Belum Dinilai</span></button></h2></div>`;
+            }
+        });
+
+        const detailsHtml = `<div class="p-3" style="background-color: #f8f9fa;"><h5 class="mb-3">Rincian Penilaian untuk: <strong>${pData.nama}</strong></h5><div class="accordion" id="${accordionId}">${accordionItems}</div></div>`;
+        const detailRow = document.createElement('tr');
+        detailRow.className = 'details-row';
+        detailRow.dataset.detailsFor = pesertaId;
+        detailRow.innerHTML = `<td colspan="8">${detailsHtml}</td>`;
+        mainRow.after(detailRow);
+        button.innerHTML = '<i class="fas fa-minus"></i>';
+    }
+}
+
+
+// ... (The rest of the rendering functions like renderIncomplete, renderDuplicate, etc., remain largely the same)
+function renderIncompleteAssessmentTable() {
+    const { peserta = [], stations = [], scores = [] } = osceData;
+    const tableBody = document.getElementById('table-incomplete-body');
+    tableBody.innerHTML = '';
+    
+    const filterName = document.getElementById('filter-nama-incomplete').value.toLowerCase();
+    const filterSession = document.getElementById('filter-sesi-incomplete').value;
+
+    const bestScores = getBestScoresPerParticipantPerStation(osceData);
+    const requiredStationIds = new Set(stations.map(s => s.id));
+    
+    if (requiredStationIds.size === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4">Tidak ada data stasiun yang ditemukan.</td></tr>`;
+        return;
+    }
+    
+    const allIncompletePeserta = peserta.map(p => {
+        const assessedStationIds = new Set(bestScores.filter(s => String(s.pesertaId) === String(p.id)).map(s => s.stationId));
+        if (assessedStationIds.size === 0) return null; 
+        
+        const missingStationIds = new Set([...requiredStationIds].filter(id => !assessedStationIds.has(id)));
+        
+        if (missingStationIds.size > 0) {
+            return { 
+                nim: p.nim, 
+                nama: p.nama, 
+                sesi: p.sesi || 'N/A', 
+                missingStations: stations.filter(s => missingStationIds.has(s.id)).map(s => s.name) 
+            };
+        }
+        return null;
+    }).filter(p => p !== null);
+
+    const filteredList = allIncompletePeserta.filter(p => {
+        const nameMatch = p.nama.toLowerCase().includes(filterName);
+        const sessionMatch = !filterSession || String(p.sesi) === filterSession;
+        return nameMatch && sessionMatch;
+    });
+
+    if (filteredList.length === 0) {
+        const message = allIncompletePeserta.length === 0 
+            ? '<i class="fas fa-check-circle fa-lg me-2 text-success"></i>Semua peserta telah dinilai lengkap di semua stasiun.'
+            : 'Tidak ada peserta yang cocok dengan filter yang Anda terapkan.';
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4">${message}</td></tr>`;
+        return;
+    }
+    
+    filteredList.sort((a, b) => a.nama.localeCompare(b.nama)).forEach(p => {
+        const stationListHtml = p.missingStations.map(name => `<span class="badge bg-warning-subtle text-warning-emphasis me-1 mb-1 p-2">${name}</span>`).join(' ');
+        tableBody.innerHTML += `<tr><td>${p.nim}</td><td><strong>${p.nama}</strong></td><td class="text-center">${p.sesi}</td><td>${stationListHtml}</td></tr>`;
+    });
+}
+
+function renderDuplicateAssessmentTable() {
+    const { peserta = [], stations = [], scores = [] } = osceData;
+    const tableBody = document.getElementById('table-duplicate-body');
+    tableBody.innerHTML = '';
+
+    const scoreTracker = {};
+    scores.forEach(score => {
+        const key = `${score.pesertaId}-${score.stationId}`;
+        if (!scoreTracker[key]) {
+            scoreTracker[key] = [];
+        }
+        scoreTracker[key].push(score);
+    });
+
+    const duplicatesByPeserta = {};
+    for (const key in scoreTracker) {
+        if (scoreTracker[key].length > 1) { 
+            const [pesertaId, stationId] = key.split('-');
+            const p = peserta.find(p => String(p.id) === String(pesertaId));
+            const station = stations.find(s => String(s.id) === String(stationId));
+
+            if (!p || !station) continue; 
+
+            if (!duplicatesByPeserta[pesertaId]) {
+                duplicatesByPeserta[pesertaId] = {
+                    nim: p.nim,
+                    nama: p.nama,
+                    sesi: p.sesi || 'N/A',
+                    duplicateStations: []
+                };
+            }
+            
+            const duplicateScores = scoreTracker[key].map(s => {
+                return calculateWeightedScore(s, station).percentage.toFixed(2);
+            });
+
+            duplicatesByPeserta[pesertaId].duplicateStations.push({
+                name: station.name,
+                scores: duplicateScores
+            });
+        }
+    }
+	    const allDuplicatesList = Object.values(duplicatesByPeserta);
+    
+    const filterName = document.getElementById('filter-nama-duplicate').value.toLowerCase();
+    const filterSession = document.getElementById('filter-sesi-duplicate').value;
+
+    const filteredList = allDuplicatesList.filter(p => {
+        const nameMatch = p.nama.toLowerCase().includes(filterName);
+        const sessionMatch = !filterSession || String(p.sesi) === filterSession;
+        return nameMatch && sessionMatch;
+    });
+
+    if (filteredList.length === 0) {
+        const message = allDuplicatesList.length === 0 
+            ? '<i class="fas fa-check-circle fa-lg me-2 text-success"></i>Tidak ada penilaian duplikat yang ditemukan.'
+            : 'Tidak ada peserta yang cocok dengan filter yang Anda terapkan.';
+        tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4">${message}</td></tr>`;
+        return;
+    }
+
+    filteredList.sort((a, b) => a.nama.localeCompare(b.nama)).forEach(p => {
+        const stationListHtml = p.duplicateStations.map(station => {
+            return `<span class="badge bg-danger-subtle text-danger-emphasis me-1 mb-1 p-2">${station.name} (Nilai: ${station.scores.join('%, ')}%)</span>`;
+        }).join(' ');
+
+        tableBody.innerHTML += `
+            <tr>
+                <td>${p.nim}</td>
+                <td><strong>${p.nama}</strong></td>
+                <td class="text-center">${p.sesi}</td>
+                <td>${stationListHtml}</td>
+            </tr>`;
+    });
+}
+
+function renderEarlyAssessmentTable() {
+    const { peserta = [], stations = [], scores = [], sessions = [] } = osceData;
+    const tableBody = document.getElementById('table-early-assessment-body');
+    tableBody.innerHTML = '';
+
+    // Data prerequisite check
+    if (sessions.length === 0 || scores.length === 0 || !scores[0].hasOwnProperty('timestamp') || !sessions[0].hasOwnProperty('startTime')) {
+        let message = 'Data tidak cukup untuk analisis ini. ';
+        if (sessions.length === 0 || !sessions[0].hasOwnProperty('startTime')) message += "Data jadwal sesi (sessions) dengan 'startTime' tidak ditemukan. ";
+        if (scores.length === 0 || !scores[0].hasOwnProperty('timestamp')) message += "Data penilaian (scores) dengan 'timestamp' tidak ditemukan.";
+        
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-muted">${message}</td></tr>`;
+        return;
+    }
+
+    const earlyAssessments = [];
+
+    // Create a quick lookup map for sessions
+    const sessionMap = new Map(sessions.map(s => [String(s.id), s]));
+
+    scores.forEach(score => {
+        const pData = peserta.find(p => String(p.id) === String(score.pesertaId));
+        if (!pData || !pData.sesi) return;
+
+        const sessionData = sessionMap.get(String(pData.sesi));
+        if (!sessionData || !score.timestamp || !sessionData.startTime) return;
+
+        try {
+            const assessmentTime = new Date(score.timestamp);
+            const sessionStartTime = new Date(sessionData.startTime);
+
+            // Check if times are valid before comparing
+            if (isNaN(assessmentTime.getTime()) || isNaN(sessionStartTime.getTime())) {
+                return;
+            }
+
+            if (assessmentTime < sessionStartTime) {
+                const station = stations.find(s => String(s.id) === String(score.stationId));
+                const timeDiffMinutes = Math.round((sessionStartTime - assessmentTime) / (1000 * 60));
+
+                earlyAssessments.push({
+                    nim: pData.nim,
+                    nama: pData.nama,
+                    sesi: pData.sesi,
+                    stationName: station ? station.name : 'Stasiun Tidak Dikenal',
+                    assessmentTime: assessmentTime,
+                    sessionStartTime: sessionStartTime,
+                    timeDiff: timeDiffMinutes
+                });
+            }
+        } catch (e) {
+            // Skip this entry if date parsing fails
+        }
+    });
+
+    if (earlyAssessments.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4"><i class="fas fa-check-circle fa-lg me-2 text-success"></i>Tidak ditemukan penilaian yang dilakukan sebelum jadwal sesi.</td></tr>`;
+        return;
+    }
+
+    // Format options for date/time
+    const timeFormatOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    const dateFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+
+    earlyAssessments.sort((a,b) => a.nama.localeCompare(b.nama)).forEach(item => {
+        const assessmentTimeStr = `${item.assessmentTime.toLocaleDateString('id-ID', dateFormatOptions)}, ${item.assessmentTime.toLocaleTimeString('id-ID', timeFormatOptions)}`;
+        const sessionTimeStr = `${item.sessionStartTime.toLocaleDateString('id-ID', dateFormatOptions)}, ${item.sessionStartTime.toLocaleTimeString('id-ID', timeFormatOptions)}`;
+
+        tableBody.innerHTML += `
+            <tr>
+                <td>${item.nim}</td>
+                <td><strong>${item.nama}</strong></td>
+                <td class="text-center">${item.sesi}</td>
+                <td>${item.stationName}</td>
+                <td class="text-center">${assessmentTimeStr.replace(/\./g, ':')}</td>
+                <td class="text-center">${sessionTimeStr.replace(/\./g, ':')}</td>
+                <td class="text-center"><span class="badge bg-warning-subtle text-warning-emphasis">${item.timeDiff} menit</span></td>
+            </tr>
+        `;
+    });
+}
+
+function renderRemedialTable() {
+    const { peserta = [], stations = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const tableBody = document.getElementById('table-remedial-body');
+    tableBody.innerHTML = '';
+    const brmPassingScores = calculateBrmPassingScores();
+    const recommendations = {};
+    scores.forEach(score => {
+        const station = stations.find(s => String(s.id) === String(score.stationId));
+        if (!station) return;
+        const { percentage } = calculateWeightedScore(score, station);
+        const passingGrade = brmPassingScores[station.id] || station.passingGrade || 75;
+        if (percentage < passingGrade) {
+            if (!recommendations[score.pesertaId]) {
+                const p = peserta.find(p => String(p.id) === String(score.pesertaId));
+                if(p) recommendations[score.pesertaId] = { nim: p.nim, nama: p.nama, stations: [] };
+            }
+            if (recommendations[score.pesertaId]) { recommendations[score.pesertaId].stations.push({ name: station.name, score: percentage.toFixed(2) }); }
+        }
+    });
+    if (Object.keys(recommendations).length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-success"><i class="fas fa-check-circle fa-lg me-2"></i>Tidak ada peserta yang memerlukan remedial.</td></tr>`;
+        return;
+    }
+    Object.values(recommendations).sort((a, b) => a.nama.localeCompare(b.nama)).forEach(rec => {
+        const stationListHtml = rec.stations.map(s => `<span class="badge bg-danger-subtle text-danger-emphasis me-1 mb-1 p-2">${s.name} (${s.score}%)</span>`).join(' ');
+        tableBody.innerHTML += `<tr><td>${rec.nim}</td><td><strong>${rec.nama}</strong></td><td>${stationListHtml}</td></tr>`;
+    });
+}
+
+function renderFeedbackCompletionTable() {
+    const { peserta = [], scores = [], feedback = [] } = osceData;
+    const tableBody = document.getElementById('table-feedback-completion-body');
+    tableBody.innerHTML = '';
+
+    const feedbackSubmitterIds = new Set(feedback.map(f => String(f.pesertaId)));
+    const participantsWithScores = new Set(scores.map(s => String(s.pesertaId)));
+
+    const missingFeedbackList = peserta.filter(p => {
+        const hasStartedExam = participantsWithScores.has(String(p.id));
+        const hasSubmittedFeedback = feedbackSubmitterIds.has(String(p.id));
+        return hasStartedExam && !hasSubmittedFeedback;
+    });
+
+    const filterName = document.getElementById('filter-nama-feedback-completion').value.toLowerCase();
+    const filterSession = document.getElementById('filter-sesi-feedback-completion').value;
+
+    const filteredList = missingFeedbackList.filter(p => {
+        const nameMatch = p.nama.toLowerCase().includes(filterName);
+        const sessionMatch = !filterSession || String(p.sesi) === filterSession;
+        return nameMatch && sessionMatch;
+    });
+
+    if (filteredList.length === 0) {
+        const message = missingFeedbackList.length === 0 
+            ? '<i class="fas fa-check-circle fa-lg me-2 text-success"></i>Semua peserta yang berpartisipasi sudah mengisi umpan balik.'
+            : 'Tidak ada peserta yang cocok dengan filter yang Anda terapkan.';
+        tableBody.innerHTML = `<tr><td colspan="3" class="text-center p-4">${message}</td></tr>`;
+        return;
+    }
+    
+    filteredList.sort((a,b) => a.nama.localeCompare(b.nama)).forEach(p => {
+        tableBody.innerHTML += `
+            <tr>
+                <td>${p.nim}</td>
+                <td><strong>${p.nama}</strong></td>
+                <td class="text-center">${p.sesi || 'N/A'}</td>
+            </tr>`;
+    });
+}
+
+
+function renderStationAnalyticsChart() {
+    const { stations = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const canvas = document.getElementById('station-analytics-chart');
+    if (stations.length === 0) { canvas.style.display = 'none'; return; }
+    canvas.style.display = 'block';
+    
+    const brmPassingScores = calculateBrmPassingScores();
+    const analyticsData = stations.map(station => {
+        const stationScores = scores.filter(s => String(s.stationId) === String(station.id));
+        const avgScore = stationScores.length > 0 ? stationScores.reduce((sum, score) => sum + calculateWeightedScore(score, station).percentage, 0) / stationScores.length : 0;
+        return { id: station.id, name: station.name, avgScore, brm: brmPassingScores[station.id] || 0 };
+    }).sort((a,b) => a.name.localeCompare(b.name));
+    
+    if (chartInstances['station-analytics-chart']) chartInstances['station-analytics-chart'].destroy();
+    const ctx = canvas.getContext('2d');
+    chartInstances['station-analytics-chart'] = new Chart(ctx, {
+        data: { labels: analyticsData.map(d => d.name), datasets: [{ type: 'bar', label: 'Rerata Nilai (%)', data: analyticsData.map(d => d.avgScore.toFixed(2)), backgroundColor: 'rgba(0, 86, 179, 0.7)', order: 2 }, { type: 'line', label: 'Batas Lulus (BRM)', data: analyticsData.map(d => d.brm.toFixed(2)), borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 3, pointRadius: 5, fill: false, order: 1 }] },
+        options: { 
+            responsive: true, 
+            onClick: (evt, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    activeStationFilter = analyticsData[index];
+                    document.getElementById('active-station-filter-name').textContent = activeStationFilter.name;
+                    document.getElementById('station-filter-info').classList.remove('d-none');
+                    renderCollectiveResultsTable();
+                }
+            },
+            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }, x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } } }, 
+            plugins: { tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.raw}%` } } } 
+        }
+    });
+}
+
+function resetStationFilter() {
+    activeStationFilter = null;
+    document.getElementById('station-filter-info').classList.add('d-none');
+    renderCollectiveResultsTable();
+}
+
+
+function getDifficultRubrics(limit = 5) {
+    const { stations = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const rubricStats = {};
+    scores.forEach(score => {
+        const station = stations.find(s => String(s.id) === String(score.stationId));
+        if (!station || !station.rubric || !score.scores) return;
+        score.scores.forEach(item => {
+            const rubricItem = station.rubric.find(r => String(r.id) === String(item.rubricId));
+            if (!rubricItem) return;
+            const key = `${station.id}-${rubricItem.id}`;
+            if (!rubricStats[key]) { rubricStats[key] = { criteria: `${station.name}: ${rubricItem.criteria}`, totalScore: 0, totalMaxScore: 0, count: 0 }; }
+            rubricStats[key].totalScore += item.score;
+            rubricStats[key].totalMaxScore += rubricItem.maxScore;
+            rubricStats[key].count++;
+        });
+    });
+    return Object.values(rubricStats)
+        .filter(stat => stat.count > 0 && stat.totalMaxScore > 0)
+        .map(stat => ({ 
+            criteria: stat.criteria, 
+            avgPercentage: (stat.totalScore / stat.totalMaxScore) * 100 
+        }))
+        .sort((a, b) => a.avgPercentage - b.avgPercentage)
+        .slice(0, limit);
+}
+
+
+function renderRubricDifficultyChart() {
+    const { scores = [] } = osceData;
+    if (scores.length === 0) { document.getElementById('rubric-difficulty-chart').style.display = 'none'; return; }
+    document.getElementById('rubric-difficulty-chart').style.display = 'block';
+    
+    const performanceData = getDifficultRubrics(15);
+    
+    if (chartInstances['rubric-difficulty-chart']) chartInstances['rubric-difficulty-chart'].destroy();
+    const ctx = document.getElementById('rubric-difficulty-chart').getContext('2d');
+    chartInstances['rubric-difficulty-chart'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: performanceData.map(d => d.criteria), datasets: [{ label: 'Rata-rata Skor Kriteria (%)', data: performanceData.map(d => d.avgPercentage.toFixed(2)), backgroundColor: 'rgba(220, 53, 69, 0.7)' }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `Rata-rata: ${c.raw}%` } } } }
+    });
+}
+
+function renderFeedbackCharts() {
+    const { feedback = [], stations = [] } = osceData;
+    const pieChartsContainer = document.getElementById('feedback-pie-charts-container');
+    const commentsAccordion = document.getElementById('feedback-comments-accordion');
+    pieChartsContainer.innerHTML = '';
+    commentsAccordion.innerHTML = '';
+    
+    if (feedback.length === 0) {
+        pieChartsContainer.innerHTML = '<div class="col-12"><div class="analysis-placeholder"><p>Belum ada data umpan balik.</p></div></div>';
+        commentsAccordion.innerHTML = '<div class="analysis-placeholder"><p>Belum ada komentar tertulis.</p></div>';
+        return;
+    }
+    
+    const ratingsByStation = {};
+    const commentsByStation = {};
+    feedback.forEach(f => {
+        if (!f.feedbackItems) return;
+        f.feedbackItems.forEach(item => {
+            if (!ratingsByStation[item.stationId]) ratingsByStation[item.stationId] = { ratings: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 } };
+            if (!commentsByStation[item.stationId]) commentsByStation[item.stationId] = [];
+            if (item.rating) ratingsByStation[item.stationId].ratings[item.rating]++;
+            if (item.comment) commentsByStation[item.stationId].push(item.comment);
+        });
+    });
+
+    Object.keys(ratingsByStation).forEach(stationId => {
+        const station = stations.find(s => String(s.id) === String(stationId));
+        if (!station) return;
+        const chartCol = document.createElement('div');
+        chartCol.className = 'col-md-6 col-lg-4 text-center';
+        const canvasId = `feedback-pie-${stationId}`;
+        chartCol.innerHTML = `<h6 class="mb-2">${station.name}</h6><canvas id="${canvasId}"></canvas>`;
+        pieChartsContainer.appendChild(chartCol);
+        const chartData = Object.values(ratingsByStation[stationId].ratings);
+        if (chartData.some(c => c > 0)) {
+            if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+            chartInstances[canvasId] = new Chart(document.getElementById(canvasId).getContext('2d'), {
+                type: 'pie',
+                data: { labels: ['1', '2', '3', '4', '5 Bintang'], datasets: [{ data: chartData, backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#0d6efd'] }] },
+                options: { responsive: true, plugins: { legend: { position: 'top' } } }
+            });
+        } else { chartCol.querySelector('canvas').remove(); chartCol.innerHTML += '<p class="text-muted small">Tidak ada data rating</p>'; }
+    });
+
+    let hasComments = false;
+    stations.forEach(station => {
+        const comments = commentsByStation[station.id] || [];
+        if (comments.length > 0) {
+            hasComments = true;
+            commentsAccordion.innerHTML += `<div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-${station.id}">${station.name} <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2">${comments.length} komentar</span></button></h2><div id="c-${station.id}" class="accordion-collapse collapse" data-bs-parent="#feedback-comments-accordion"><div class="accordion-body" style="max-height: 250px; overflow-y: auto;"><ul class="list-group list-group-flush">${comments.map(c => `<li class="list-group-item">"${c}"</li>`).join('')}</ul></div></div></div>`;
+        }
+    });
+    if (!hasComments) commentsAccordion.innerHTML = '<div class="analysis-placeholder"><p>Belum ada komentar tertulis.</p></div>';
+}
+
+function renderAdvancedAnalysis(containerId, title, placeholderText, renderFunction) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        const hasData = renderFunction();
+        if (!hasData) {
+            container.innerHTML = `<h5>${title}</h5><div class="analysis-placeholder"><p>${placeholderText}</p></div>`;
+        }
+    } catch (e) {
+        console.error(`Error rendering ${containerId}:`, e);
+        container.innerHTML = `<h5>${title}</h5><div class="analysis-placeholder"><p>Terjadi error saat memproses data untuk analisis ini.</p></div>`;
+    }
+}
+
+
+function renderSessionComparison() {
+    renderAdvancedAnalysis('session-analysis-container', '<i class="fas fa-layer-group text-primary"></i> Perbandingan Kinerja Antar Sesi', 'Data sesi tidak cukup untuk perbandingan (hanya 1 atau 0 sesi ditemukan).', () => {
+        const { peserta = [], stations = [] } = osceData;
+        const scores = getBestScoresPerParticipantPerStation(osceData);
+        const sessions = peserta.reduce((acc, p) => {
+            const sessionName = p.sesi || 'Lainnya';
+            if (!acc[sessionName]) acc[sessionName] = { pesertaIds: new Set(), scores: [] };
+            acc[sessionName].pesertaIds.add(p.id);
+            return acc;
+        }, {});
+
+        if (Object.keys(sessions).length <= 1) return false;
+        
+        scores.forEach(score => {
+            const p = peserta.find(p => String(p.id) === String(score.pesertaId));
+            if (p) {
+                const sessionName = p.sesi || 'Lainnya';
+                const station = stations.find(s => String(s.id) === String(score.stationId));
+                if(station && sessions[sessionName]) sessions[sessionName].scores.push(calculateWeightedScore(score, station).percentage);
+            }
+        });
+
+        const sessionData = Object.keys(sessions).map(name => {
+            const avg = sessions[name].scores.length > 0 ? sessions[name].scores.reduce((a, b) => a + b, 0) / sessions[name].scores.length : 0;
+            return { name: `Sesi ${name}`, avgScore: avg, count: sessions[name].pesertaIds.size };
+        }).sort((a,b) => a.name.localeCompare(b.name));
+
+        if (chartInstances['session-comparison-chart']) chartInstances['session-comparison-chart'].destroy();
+        const ctx = document.getElementById('session-comparison-chart').getContext('2d');
+        chartInstances['session-comparison-chart'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: sessionData.map(s => s.name), datasets: [{ label: 'Rerata Nilai Sesi (%)', data: sessionData.map(s => s.avgScore.toFixed(2)), backgroundColor: 'rgba(255, 159, 64, 0.7)' }] },
+            options: { scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+        });
+        
+        const tableBody = document.getElementById('session-summary-table');
+        tableBody.innerHTML = '';
+        sessionData.forEach(s => {
+            tableBody.innerHTML += `<tr><td><strong>${s.name}</strong></td><td class="text-center">${s.count}</td><td class="text-center">${s.avgScore.toFixed(2)}%</td></tr>`;
+        });
+        return true;
+    });
+}
+
+function renderExaminerAnalysis() {
+    renderAdvancedAnalysis('examiner-analysis-container', '<i class="fas fa-user-check text-primary"></i> Analisis Kinerja Penguji', 'Data penilaian tidak mengandung ID Penguji (`pengujiId`) atau tidak ada data penilaian.', () => {
+        const { penguji = [], stations = [] } = osceData;
+        const scores = getBestScoresPerParticipantPerStation(osceData);
+        if (!scores.length || !scores[0].hasOwnProperty('pengujiId')) return false;
+
+        const examinerStats = penguji.map(e => {
+            const eScoresData = scores.filter(s => String(s.pengujiId) === String(e.id));
+            const eScores = eScoresData.map(s => calculateWeightedScore(s, stations.find(st => String(st.id) === String(s.stationId))).percentage);
+            return {
+                id: e.id, name: e.nama, count: eScores.length,
+                avg: eScores.length > 0 ? eScores.reduce((a, b) => a + b, 0) / eScores.length : 0,
+                stdDev: standardDeviation(eScores),
+                assessments: eScoresData // for modal details
+            };
+        }).filter(e => e.count > 0).sort((a,b) => a.name.localeCompare(b.name));
+        
+        if (examinerStats.length === 0) return false;
+
+        if (chartInstances['examiner-performance-chart']) chartInstances['examiner-performance-chart'].destroy();
+        const ctx = document.getElementById('examiner-performance-chart').getContext('2d');
+        chartInstances['examiner-performance-chart'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: examinerStats.map(e => e.name), datasets: [{ label: 'Rerata Nilai Diberikan (%)', data: examinerStats.map(e => e.avg.toFixed(2)), backgroundColor: 'rgba(75, 192, 192, 0.7)' }] },
+            options: { 
+                scales: { y: { beginAtZero: true, max: 100 } },
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        showExaminerDetails(examinerStats[index]);
+                    }
+                }
+            }
+        });
+
+        const tableBody = document.getElementById('examiner-performance-table');
+        tableBody.innerHTML = '';
+        examinerStats.forEach(e => {
+            tableBody.innerHTML += `<tr><td><strong>${e.name}</strong></td><td class="text-center">${e.count}</td><td class="text-center">${e.avg.toFixed(2)}%</td><td class="text-center">${e.stdDev.toFixed(2)}</td></tr>`;
+        });
+        return true;
+    });
+}
+
+function showExaminerDetails(examinerData) {
+    const { stations = [] } = osceData;
+    document.getElementById('examinerDetailModalLabel').textContent = `Detail Penilaian untuk: ${examinerData.name}`;
+
+    const assessmentsByStation = {};
+    examinerData.assessments.forEach(s => {
+        const station = stations.find(st => String(st.id) === String(s.stationId));
+        if (!station) return;
+        if (!assessmentsByStation[station.id]) {
+            assessmentsByStation[station.id] = { name: station.name, scores: [] };
+        }
+        assessmentsByStation[station.id].scores.push(calculateWeightedScore(s, station).percentage);
+    });
+
+    let tableRows = Object.values(assessmentsByStation).map(data => {
+        const avg = data.scores.length > 0 ? (data.scores.reduce((a, b) => a + b, 0) / data.scores.length).toFixed(2) : 'N/A';
+        return `<tr><td>${data.name}</td><td class="text-center">${data.scores.length}</td><td class="text-center">${avg}%</td></tr>`;
+    }).join('');
+
+    if (tableRows === '') tableRows = `<tr><td colspan="3" class="text-center">Tidak ada data penilaian.</td></tr>`;
+
+    const modalBody = document.getElementById('examinerDetailBody');
+    modalBody.innerHTML = `
+        <p>Penguji ini telah melakukan <strong>${examinerData.count}</strong> penilaian dengan rata-rata keseluruhan <strong>${examinerData.avg.toFixed(2)}%</strong>.</p>
+        <p>Berikut rincian penilaian per stasiun:</p>
+        <table class="table table-striped table-bordered">
+            <thead class="table-light"><tr><th>Nama Stasiun</th><th class="text-center">Jumlah Penilaian</th><th class="text-center">Rata-rata Nilai</th></tr></thead>
+            <tbody>${tableRows}</tbody>
+        </table>`;
+    examinerDetailModal.show();
+}
+
+function renderGprCorrelation() {
+    renderAdvancedAnalysis('gpr-correlation-container', '<i class="fas fa-crosshairs text-primary"></i> Korelasi GPR vs Nilai Rubrik', 'Tidak cukup data GPR untuk menampilkan korelasi (dibutuhkan min. 10).', () => {
+        const { stations = [] } = osceData;
+        const scores = getBestScoresPerParticipantPerStation(osceData);
+        const correlationData = scores
+            .filter(s => s.globalPerformance && typeof s.globalPerformance === 'number')
+            .map(s => ({ x: s.globalPerformance, y: calculateWeightedScore(s, stations.find(st => String(st.id) === String(s.stationId))).percentage }));
+
+        if (correlationData.length < 10) return false;
+
+        if (chartInstances['gpr-correlation-chart']) chartInstances['gpr-correlation-chart'].destroy();
+        const ctx = document.getElementById('gpr-correlation-chart').getContext('2d');
+        chartInstances['gpr-correlation-chart'] = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets: [{ label: 'Penilaian (GPR vs Nilai Rubrik)', data: correlationData, backgroundColor: 'rgba(153, 102, 255, 0.6)' }] },
+            options: { scales: { x: { title: { display: true, text: 'Global Performance Rating (GPR)' }, min: 0.5, max: 4.5, ticks: { stepSize: 1 } }, y: { title: { display: true, text: 'Nilai Rubrik (%)' }, min: 0, max: 100 } } }
+        });
+        return true;
+    });
+}
+
+function renderDifferentiatingRubrics() {
+    renderAdvancedAnalysis('differentiating-rubric-container', '<i class="fas fa-magnifying-glass-chart text-primary"></i> Kriteria Rubrik Paling Membedakan (Top 15)', 'Tidak ada data varian rubrik yang dapat dianalisis.', () => {
+        const { stations = [] } = osceData;
+        const scores = getBestScoresPerParticipantPerStation(osceData);
+        const rubricScores = {};
+        scores.forEach(score => {
+            const station = stations.find(s => String(s.id) === String(score.stationId));
+            if (!station || !station.rubric || !score.scores) return;
+            score.scores.forEach(item => {
+                const rubricItem = station.rubric.find(r => String(r.id) === String(item.rubricId));
+                if (!rubricItem) return;
+                const key = `${station.id}-${rubricItem.id}`;
+                if (!rubricScores[key]) rubricScores[key] = { criteria: `${station.name}: ${rubricItem.criteria}`, scores: [] };
+                rubricScores[key].scores.push(item.score);
+            });
+        });
+
+        const varianceData = Object.values(rubricScores)
+            .map(stat => ({ criteria: stat.criteria, stdDev: standardDeviation(stat.scores) }))
+            .filter(stat => stat.stdDev > 0).sort((a, b) => b.stdDev - a.stdDev).slice(0, 15);
+        
+        if (varianceData.length === 0) return false;
+
+        if (chartInstances['differentiating-rubric-chart']) chartInstances['differentiating-rubric-chart'].destroy();
+        const ctx = document.getElementById('differentiating-rubric-chart').getContext('2d');
+        chartInstances['differentiating-rubric-chart'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: varianceData.map(d => d.criteria), datasets: [{ label: 'Standar Deviasi Nilai', data: varianceData.map(d => d.stdDev.toFixed(3)), backgroundColor: 'rgba(54, 162, 235, 0.7)' }] },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, title: { display: true, text: 'Standar Deviasi' } } }, plugins: { legend: { display: false } } }
+        });
+        return true;
+    });
+}
+
+// =================================================================
+// FUNGSI RENDERING FITUR BARU
+// =================================================================
+function renderPsychometricAnalysis() {
+    const { stations = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const summaryTableBody = document.getElementById('cronbach-alpha-summary-table');
+    summaryTableBody.innerHTML = '';
+    
+    if (stations.length === 0 || scores.length < 2) {
+        summaryTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4">Tidak cukup data untuk analisis psikometrik.</td></tr>`;
+        return;
+    }
+    
+    stations.forEach(station => {
+        if (!station.rubric || station.rubric.length < 2) {
+            summaryTableBody.innerHTML += `<tr><td>${station.name}</td><td class="text-center">${station.rubric?.length || 0}</td><td class="text-center">-</td><td><span class="badge bg-secondary">N/A</span></td></tr>`;
+            return;
+        }
+
+        const stationScores = scores.filter(s => String(s.stationId) === String(station.id));
+        const dataMatrix = stationScores.map(score => 
+            station.rubric.map(rubricItem => {
+                const item = score.scores?.find(s => s.rubricId === rubricItem.id);
+                return item ? item.score : 0; // Assume 0 if score is missing
+            })
+        );
+        
+        if (dataMatrix.length < 2) {
+            summaryTableBody.innerHTML += `<tr><td>${station.name}</td><td class="text-center">${station.rubric.length}</td><td class="text-center">-</td><td><span class="badge bg-secondary">N/A</span></td></tr>`;
+            return;
+        }
+
+        const { alpha, k } = calculateCronbachsAlpha(dataMatrix);
+        let interpretation, badgeClass;
+        if (isNaN(alpha)) { interpretation = 'Tidak dapat dihitung'; badgeClass = 'bg-secondary'; }
+        else if (alpha >= 0.9) { interpretation = 'Sangat Baik'; badgeClass = 'bg-primary'; }
+        else if (alpha >= 0.8) { interpretation = 'Baik'; badgeClass = 'bg-success'; }
+        else if (alpha >= 0.7) { interpretation = 'Cukup'; badgeClass = 'bg-info'; }
+        else if (alpha >= 0.6) { interpretation = 'Perlu Perhatian'; badgeClass = 'bg-warning'; }
+        else { interpretation = 'Rendah'; badgeClass = 'bg-danger'; }
+
+        summaryTableBody.innerHTML += `<tr><td>${station.name}</td><td class="text-center">${k}</td><td class="text-center">${isNaN(alpha) ? '-' : alpha.toFixed(3)}</td><td class="text-center"><span class="badge ${badgeClass}">${interpretation}</span></td></tr>`;
+    });
+}
+
+function renderExaminerStationDistribution() {
+    const { penguji = [], stations = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const accordionContainer = document.getElementById('examiner-distribution-accordion');
+    accordionContainer.innerHTML = '';
+
+    if (!scores.length || !scores[0].hasOwnProperty('pengujiId')) {
+        accordionContainer.innerHTML = `<div class="analysis-placeholder"><p>Data distribusi penguji tidak dapat ditampilkan karena data penilaian tidak mengandung ID Penguji ('pengujiId').</p></div>`;
+        return;
+    }
+
+    const distribution = {}; // { stationId: { pengujiId: [scores] } }
+    scores.forEach(score => {
+        const station = stations.find(st => String(st.id) === String(score.stationId));
+        if (!station) return;
+        const scorePercent = calculateWeightedScore(score, station).percentage;
+
+        if (!distribution[score.stationId]) distribution[score.stationId] = {};
+        if (!distribution[score.stationId][score.pengujiId]) distribution[score.stationId][score.pengujiId] = [];
+        distribution[score.stationId][score.pengujiId].push(scorePercent);
+    });
+
+    let accordionHtml = '';
+    stations.sort((a,b) => a.name.localeCompare(b.name)).forEach(station => {
+        const stationDist = distribution[station.id];
+        let tableBody = '';
+        if (stationDist) {
+            Object.keys(stationDist).forEach(pengujiId => {
+                const p = penguji.find(p => String(p.id) === String(pengujiId)); 
+                const examinerName = p ? p.nama : `Penguji ID: ${pengujiId}`;
+                const examinerScores = stationDist[pengujiId];
+                const count = examinerScores.length;
+                const avg = count > 0 ? (examinerScores.reduce((a, b) => a + b, 0) / count).toFixed(2) : 'N/A';
+                tableBody += `<tr><td>${examinerName}</td><td class="text-center">${count}</td><td class="text-center">${avg}%</td></tr>`;
+            });
+        }
+        
+        if (tableBody === '') tableBody = `<tr><td colspan="3" class="text-center text-muted">Tidak ada data penilaian untuk stasiun ini.</td></tr>`;
+
+        accordionHtml += `
+            <div class="accordion-item">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dist-${station.id}">${station.name}</button></h2>
+                <div id="collapse-dist-${station.id}" class="accordion-collapse collapse" data-bs-parent="#examiner-distribution-accordion">
+                    <div class="accordion-body"><table class="table table-sm table-striped"><thead class="table-light"><tr><th>Nama Penguji</th><th class="text-center">Jumlah Penilaian</th><th class="text-center">Rata-rata Nilai</th></tr></thead><tbody>${tableBody}</tbody></table></div>
+                </div>
+            </div>`;
+    });
+
+    if (accordionHtml === '') {
+        accordionContainer.innerHTML = `<div class="analysis-placeholder"><p>Tidak ada data untuk ditampilkan.</p></div>`;
+    } else {
+        accordionContainer.innerHTML = accordionHtml;
+    }
+}
+
+function renderAcademicRecommendations() {
+    const { stations = [], penguji = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const container = document.getElementById('recommendations-content');
+    container.innerHTML = '';
+
+    if (scores.length === 0) {
+        container.innerHTML = `<div class="analysis-placeholder"><p>Belum ada data penilaian untuk menghasilkan rekomendasi.</p></div>`;
+        return;
+    }
+    
+    // 1. Weakness Analysis
+    const difficultRubrics = getDifficultRubrics(5);
+    let weaknessHtml = '<p>Secara umum, kompetensi peserta sudah merata dan baik.</p>';
+    if(difficultRubrics.length > 0) {
+        weaknessHtml = `<p>Berdasarkan analisis skor, beberapa kompetensi berikut menunjukkan tingkat penguasaan terendah secara kolektif dan perlu menjadi fokus perbaikan kurikulum atau pelatihan tambahan:</p><ul class="list-group">${difficultRubrics.map(r => `<li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="fas fa-exclamation-circle text-danger me-2"></i>${r.criteria}</span><span class="badge bg-danger rounded-pill">${r.avgPercentage.toFixed(1)}%</span></li>`).join('')}</ul>`;
+    }
+
+    // 2. Strength Analysis
+    const stationAverages = stations.map(station => {
+        const stationScores = scores.filter(s => String(s.stationId) === String(station.id)).map(s => calculateWeightedScore(s, station).percentage);
+        const avg = stationScores.length > 0 ? stationScores.reduce((a,b)=>a+b,0) / stationScores.length : 0;
+        return { name: station.name, avgScore: avg };
+    }).sort((a,b) => b.avgScore - a.avgScore).slice(0,3);
+
+    let strengthHtml = '<p>Data belum cukup untuk mengidentifikasi kekuatan utama.</p>';
+    if(stationAverages.length > 0 && stationAverages[0].avgScore > 0) {
+        strengthHtml = `<p>Peserta menunjukkan performa terbaik pada stasiun-stasiun berikut, yang dapat dianggap sebagai kekuatan utama dari kohort ini:</p><ul class="list-group">${stationAverages.map(s => `<li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="fas fa-check-circle text-success me-2"></i>${s.name}</span><span class="badge bg-success rounded-pill">${s.avgScore.toFixed(1)}%</span></li>`).join('')}</ul>`;
+    }
+
+    // 3. Notes for Committee/Examiners
+    let notesHtml = `<p>Sistem penilaian berjalan dengan baik tanpa ada anomali yang signifikan.</p>`;
+    if (scores.length > 0 && scores[0].hasOwnProperty('pengujiId')) {
+         const examinerStats = penguji.map(e => {
+            const eScores = scores.filter(s => String(s.pengujiId) === String(e.id)).map(s => calculateWeightedScore(s, stations.find(st => String(st.id) === String(s.stationId))).percentage);
+            return { name: e.nama, count: eScores.length, stdDev: standardDeviation(eScores) };
+        }).filter(e => e.count > 5); // Only consider examiners with >5 assessments for stability
+
+        const highVarianceExaminers = examinerStats.sort((a,b) => b.stdDev - a.stdDev).slice(0,2);
+        if (highVarianceExaminers.length > 0 && highVarianceExaminers[0].stdDev > 15) { // Threshold for high variance
+            notesHtml = `<p>Perlu dipertimbangkan untuk mengadakan sesi kalibrasi bagi para penguji untuk menyamakan persepsi penilaian. Beberapa penguji menunjukkan variasi penilaian yang tinggi, antara lain:</p><ul>${highVarianceExaminers.map(e => `<li><strong>${e.name}</strong> (Std. Deviasi: ${e.stdDev.toFixed(2)})</li>`).join('')}</ul>`
+        }
+    }
+
+    container.innerHTML = `<div class="row g-4"><div class="col-lg-6"><div class="recommendation-card weakness h-100"><h5 class="text-danger-emphasis"><i class="fas fa-bullseye me-2"></i>Area Fokus Perbaikan</h5>${weaknessHtml}</div></div><div class="col-lg-6"><div class="recommendation-card strength h-100"><h5 class="text-success-emphasis"><i class="fas fa-trophy me-2"></i>Kekuatan Utama Peserta</h5>${strengthHtml}</div></div><div class="col-12"><div class="recommendation-card notes"><h5 class="text-warning-emphasis"><i class="fas fa-clipboard-check me-2"></i>Catatan untuk Panitia & Penguji</h5>${notesHtml}</div></div></div>`;
+}
+
+function generateAndShowIndividualReport(pesertaId) {
+    const { peserta = [], stations = [], sessions = [] } = osceData;
+    const scores = getBestScoresPerParticipantPerStation(osceData);
+    const pData = peserta.find(p => String(p.id) === pesertaId);
+    if (!pData) {
+        console.error("Data peserta tidak ditemukan untuk ID:", pesertaId);
+        return;
+    }
+
+    const allProcessedData = processAllParticipantScores();
+    // =================================================================
+    // PERBAIKAN BUG 2: Menggunakan ID unik untuk mencari data peserta, bukan nama.
+    // Ini memastikan data yang diambil 100% akurat untuk peserta yang dipilih.
+    // =================================================================
+    const pProcessedData = allProcessedData.find(p => String(p.id) === pesertaId);
+    
+    if (!pProcessedData || pProcessedData.avgScore === null) {
+        alert("Peserta ini belum memiliki data nilai yang cukup untuk dibuatkan laporan.");
+        return;
+    }
+
+    const cohortScores = allProcessedData.filter(p => p.avgScore !== null).map(p => p.avgScore);
+    cohortScores.sort((a, b) => b - a);
+    const rank = cohortScores.indexOf(pProcessedData.avgScore) + 1;
+    
+    const bestScores = getBestScoresPerParticipantPerStation(osceData);
+    const stationCohortAverages = stations.map(station => {
+        const stationScores = bestScores.filter(s => s.stationId === station.id).map(s => calculateWeightedScore(s, station).percentage);
+        return { id: station.id, avg: stationScores.length > 0 ? stationScores.reduce((a,b)=>a+b,0)/stationScores.length : 0 };
+    });
+
+    const brmPassingScores = calculateBrmPassingScores();
+    const sortedStations = [...stations].sort((a,b) => a.name.localeCompare(b.name));
+    
+    const remedialStations = [];
+    let stationTableRows = '';
+    sortedStations.forEach(station => {
+        const pStationScoreData = pProcessedData.stationScores[station.id];
+        const pScore = pStationScoreData ? pStationScoreData.score : null;
+        const cohortAvg = stationCohortAverages.find(avg => avg.id === station.id)?.avg || 0;
+        const stationPassingGrade = brmPassingScores[station.id] || station.passingGrade || 75;
+        const isStationPassed = pScore !== null && pScore >= stationPassingGrade;
+        
+        // =================================================================
+        // PENAMBAHAN FITUR: Mengumpulkan data stasiun yang perlu remedial
+        // =================================================================
+        if (pScore !== null && !isStationPassed) {
+            remedialStations.push({ name: station.name, score: pScore });
+        }
+
+        const scoreHtml = pScore !== null ? pScore.toFixed(2) + '%' : 'N/A';
+        const statusHtml = pScore === null 
+            ? `<span class="badge bg-secondary">T/D</span>` 
+            : `<span class="badge ${isStationPassed ? 'bg-success' : 'bg-danger'}">${isStationPassed ? 'Lulus' : 'Remedial'}</span>`;
+
+        stationTableRows += `
+            <tr>
+                <td>${station.name}</td>
+                <td class="text-center fw-bold ${pScore === null ? '' : (isStationPassed ? 'text-success' : 'text-danger')}">${scoreHtml}</td>
+                <td class="text-center text-muted">${cohortAvg.toFixed(2)}%</td>
+                <td class="text-center">${statusHtml}</td>
+            </tr>
+        `;
+    });
+    
+    // Perbaikan Logika: Analisis kekuatan dan kelemahan berdasarkan ID, bukan nama
+    let allRubricScores = [];
+    for (const stationId in pProcessedData.stationScores) {
+        const stationData = stations.find(s => String(s.id) === String(stationId));
+        const pScoreData = scores.find(s => String(s.pesertaId) === pesertaId && String(s.stationId) === String(stationId));
+
+        if (stationData && stationData.rubric && pScoreData?.scores) {
+            pScoreData.scores.forEach(rubricScore => {
+                const rubricItem = stationData.rubric.find(r => r.id === rubricScore.rubricId);
+                if (rubricItem && rubricItem.maxScore > 0) {
+                    allRubricScores.push({
+                        criteria: `${stationData.name}: ${rubricItem.criteria}`,
+                        percentage: (rubricScore.score / rubricItem.maxScore) * 100
+                    });
+                }
+            });
+        }
+    }
+    
+    const strengths = [...allRubricScores].filter(s => s.percentage > 80).sort((a, b) => b.percentage - a.percentage).slice(0, 5);
+    const weaknesses = [...allRubricScores].filter(w => w.percentage < 70).sort((a, b) => a.percentage - b.percentage).slice(0, 5);
+    
+    // =================================================================
+    // PENAMBAHAN FITUR: Membuat HTML untuk rekomendasi remedial
+    // =================================================================
+    let remedialRecommendationsHtml = '';
+    if (remedialStations.length > 0) {
+        remedialRecommendationsHtml = `
+            <p>Berdasarkan hasil ujian, Anda direkomendasikan untuk mengikuti program remedial pada stasiun-stasiun berikut untuk meningkatkan kompetensi Anda:</p>
+            <ul class="list-group list-group-flush">
+                ${remedialStations.map(s => `<li class="list-group-item d-flex justify-content-between align-items-center"><span><i class="fas fa-exclamation-triangle text-warning me-2"></i>${s.name}</span><span class="badge bg-danger rounded-pill">Nilai Anda: ${s.score.toFixed(2)}%</span></li>`).join('')}
+            </ul>
+            <p class="mt-2 text-muted small">Silakan hubungi bagian akademik atau koordinator OSCE untuk informasi jadwal dan prosedur remedial lebih lanjut.</p>
+        `;
+    } else {
+        remedialRecommendationsHtml = `
+            <div class="alert alert-success">
+                <h5 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Kerja Bagus!</h5>
+                <p>Selamat, Anda telah lulus di semua stasiun yang dinilai. Tidak ada rekomendasi remedial untuk Anda. Pertahankan prestasi dan terus tingkatkan kemampuan Anda!</p>
+            </div>
+        `;
+    }
+
+    const reportBody = document.getElementById('individualReportBody');
+    const signatureName = config?.ketuaProdi?.nama || '(Nama Ketua Prodi)';
+    const signatureNip = config?.ketuaProdi?.nip || '(NIP Ketua Prodi)';
+    const reportDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const reportHtml = `
+        <div class="container-fluid p-4" id="printable-individual-report">
+            <header class="text-center my-4">
+                <h4>Laporan Umpan Balik Individual OSCE</h4>
+                <p class="lead mb-0">${config?.institutionName || 'Program Studi D3 Keperawatan Waikabubak'}</p>
+                <hr/>
+            </header>
+            <div class="row mb-4">
+                <div class="col-6"><strong>Nama Peserta:</strong> ${pData.nama}</div>
+                <div class="col-6"><strong>NIM:</strong> ${pData.nim}</div>
+                <div class="col-6"><strong>Tanggal Ujian:</strong> ${reportDate}</div>
+            </div>
+
+            <h5>Ringkasan Performa</h5>
+            <div class="row g-3 mb-4 text-center">
+                <div class="col-md-4"><div class="card h-100"><div class="card-body"><h6 class="card-subtitle mb-2 text-muted">Nilai Akhir</h6><p class="card-text h2 fw-bold ${pProcessedData.isPassed ? 'text-success' : 'text-danger'}">${pProcessedData.avgScore.toFixed(2)}%</p></div></div></div>
+                <div class="col-md-4"><div class="card h-100"><div class="card-body"><h6 class="card-subtitle mb-2 text-muted">Status</h6><p class="card-text h2 fw-bold ${pProcessedData.isPassed ? 'text-success' : 'text-danger'}">${pProcessedData.isPassed ? 'Lulus' : 'Tidak Lulus'}</p></div></div></div>
+                <div class="col-md-4"><div class="card h-100"><div class="card-body"><h6 class="card-subtitle mb-2 text-muted">Peringkat</h6><p class="card-text h2 fw-bold text-primary">${rank} <span class="h5 text-muted">/ ${cohortScores.length}</span></p></div></div></div>
+            </div>
+
+            <h5>Performa per Stasiun</h5>
+            <p class="text-muted small">Grafik di bawah membandingkan performa Anda (biru) dengan rata-rata seluruh peserta (abu-abu). Tabel di bawahnya memberikan rincian nilai dan status kelulusan untuk setiap stasiun.</p>
+            <div class="mb-3" style="height: 350px;">
+                <canvas id="individualStationChart"></canvas>
+            </div>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-sm table-striped">
+                    <thead class="table-light"><tr><th>Nama Stasiun</th><th class="text-center">Nilai Anda</th><th class="text-center">Rerata Angkatan</th><th class="text-center">Status Stasiun</th></tr></thead>
+                    <tbody>${stationTableRows}</tbody>
+                </table>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <h5><i class="fas fa-trophy text-success"></i> Kekuatan Utama (Top 5)</h5>
+                    <ul class="list-group list-group-flush">${strengths.length > 0 ? strengths.map(s => `<li class="list-group-item">${s.criteria}</li>`).join('') : '<li class="list-group-item text-muted">Tidak ada kompetensi yang menonjol secara signifikan.</li>'}</ul>
+                </div>
+                <div class="col-lg-6">
+                    <h5><i class="fas fa-bullseye text-danger"></i> Area Perbaikan (Top 5)</h5>
+                    <ul class="list-group list-group-flush">${weaknesses.length > 0 ? weaknesses.map(w => `<li class="list-group-item">${w.criteria}</li>`).join('') : '<li class="list-group-item text-muted">Tidak ada area perbaikan yang signifikan. Selamat!</li>'}</ul>
+                </div>
+            </div>
+
+            <!-- Bagian Rekomendasi Remedial yang Baru Ditambahkan -->
+            <h5 class="mt-4"><i class="fas fa-clipboard-list text-info"></i> Rekomendasi & Tindak Lanjut</h5>
+            ${remedialRecommendationsHtml}
+            
+            <div class="d-none d-print-block">
+                <div class="row text-center" style="margin-top: 8rem;">
+                    <div class="col-6"></div>
+                    <div class="col-6">
+                        <p>Waikabubak, ${reportDate}</p>
+                        <p>Ketua Program Studi</p>
+                        <div style="height: 80px;"></div>
+                        <p class="fw-bold" style="text-decoration: underline;">${signatureName}</p>
+                        <p>NIP. ${signatureNip}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    reportBody.innerHTML = reportHtml;
+    individualReportModal.show();
+    
+    setTimeout(() => {
+        const chartData = {
+            labels: sortedStations.map(s => s.name),
+            datasets: [
+                {
+                    label: 'Nilai Anda (%)',
+                    data: sortedStations.map(s => pProcessedData.stationScores[s.id]?.score?.toFixed(2) || 0),
+                    backgroundColor: 'rgba(0, 86, 179, 0.7)',
+                },
+                {
+                    label: 'Rerata Angkatan (%)',
+                    data: sortedStations.map(s => stationCohortAverages.find(avg => avg.id === s.id)?.avg?.toFixed(2) || 0),
+                    backgroundColor: 'rgba(201, 203, 207, 0.7)',
+                }
+            ]
+        };
+
+        const ctx = document.getElementById('individualStationChart')?.getContext('2d');
+        if (!ctx) {
+            console.error("Canvas element for individual chart not found.");
+            return;
+        }
+        if(chartInstances.individualStationChart) chartInstances.individualStationChart.destroy();
+        chartInstances.individualStationChart = new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    }, 300);
+}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
