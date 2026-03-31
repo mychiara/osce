@@ -42,6 +42,8 @@ let statusUjianChartInstance,
 let stationTimer = null;
 let liveMonitorInterval = null;
 let realtimeChannels = {};
+let isProcessingPendingSync = false;
+let syncQueueInterval = null;
 
 // =================================================================
 // DASHBOARD GLOBAL TIMER STATE
@@ -237,18 +239,29 @@ function applyRolePermissions(user) {
 function updateRealtimeBadge(status) {
   const badge = document.getElementById("realtime-status-badge");
   if (!badge) return;
+
+  const pendingSyncs = getFromStorage("osce_pending_sync") || [];
+  const pendingCount = pendingSyncs.length;
+
   if (status === "online") {
-    badge.innerHTML = '<i class="fas fa-circle me-1 small"></i> Online';
-    badge.className =
-      "badge rounded-pill bg-success ms-2 d-none d-md-inline-block";
+    if (pendingCount > 0) {
+      badge.innerHTML = `<i class="fas fa-sync fa-spin me-1 small"></i> Terhubung (${pendingCount} tertunda)`;
+      badge.className =
+        "badge rounded-pill bg-info text-dark ms-2 d-none d-md-inline-block";
+    } else {
+      badge.innerHTML = '<i class="fas fa-circle me-1 small"></i> Online';
+      badge.className =
+        "badge rounded-pill bg-success ms-2 d-none d-md-inline-block";
+    }
   } else if (status === "connecting") {
     badge.innerHTML =
       '<i class="fas fa-spinner fa-spin me-1 small"></i> Menghubungkan...';
     badge.className =
       "badge rounded-pill bg-warning text-dark ms-2 d-none d-md-inline-block";
   } else {
-    badge.innerHTML =
-      '<i class="fas fa-circle me-1 small"></i> Terputus (Offline)';
+    const offlineText =
+      pendingCount > 0 ? `Offline (${pendingCount} tertunda)` : "Offline";
+    badge.innerHTML = `<i class="fas fa-circle me-1 small"></i> ${offlineText}`;
     badge.className =
       "badge rounded-pill bg-secondary ms-2 d-none d-md-inline-block";
   }
@@ -312,56 +325,171 @@ async function syncAction(table, payload, action = "upsert") {
   try {
     let supabaseTable = table;
     if (table === "osce_schedule_params") {
-      await supabaseClient.from("config").upsert({
+      const { error } = await supabaseClient.from("config").upsert({
         key: "scheduleParams",
         value: payload,
         updated_at: new Date().toISOString(),
       });
+      if (error) throw error;
       return;
     }
     if (table === "osce_cert_settings") {
-      await supabaseClient.from("config").upsert({
+      const { error } = await supabaseClient.from("config").upsert({
         key: "certSettings",
         value: payload,
         updated_at: new Date().toISOString(),
       });
+      if (error) throw error;
       return;
     }
     if (table === "osce_collective_passing_grade") {
-      await supabaseClient.from("config").upsert({
+      const { error } = await supabaseClient.from("config").upsert({
         key: "osce_collective_passing_grade",
         value: payload,
         updated_at: new Date().toISOString(),
       });
+      if (error) throw error;
       return;
     }
     if (table === "osce_excluded_stations") {
-      await supabaseClient.from("config").upsert({
+      const { error } = await supabaseClient.from("config").upsert({
         key: "osce_excluded_stations",
         value: payload,
         updated_at: new Date().toISOString(),
       });
+      if (error) throw error;
       return;
     }
-
     if (table === "osce_passing_method") {
-      await supabaseClient.from("config").upsert({
+      const { error } = await supabaseClient.from("config").upsert({
         key: "osce_passing_method",
         value: payload,
         updated_at: new Date().toISOString(),
       });
+      if (error) throw error;
       return;
     }
 
     if (action === "delete") {
-      await supabaseClient.from(supabaseTable).delete().eq("id", payload.id);
+      const { error } = await supabaseClient
+        .from(supabaseTable)
+        .delete()
+        .eq("id", payload.id);
+      if (error) throw error;
     } else {
-      await supabaseClient.from(supabaseTable).upsert(payload);
+      const { error } = await supabaseClient
+        .from(supabaseTable)
+        .upsert(payload);
+      if (error) throw error;
+    }
+
+    // Check for network status
+    if (navigator.onLine) {
+      updateRealtimeBadge("online");
     }
   } catch (e) {
-    console.warn(`[Auto-Sync Engine] Failure tracking ${table}:`, e.message);
+    if (!navigator.onLine) {
+      updateRealtimeBadge("offline");
+    }
+    console.warn(
+      `[Auto-Sync Engine] Failure tracking ${table}, queuing for retry:`,
+      e.message,
+    );
+    addToPendingSync(table, payload, action);
   }
 }
+
+function addToPendingSync(table, payload, action) {
+  const queue = getFromStorage("osce_pending_sync") || [];
+  // Hindari duplikasi jika payload memiliki ID yang sama di tabel yang sama
+  const exists = queue.findIndex(
+    (item) =>
+      item.table === table &&
+      item.payload.id === payload.id &&
+      item.action === action,
+  );
+  if (exists > -1) {
+    queue[exists] = { table, payload, action, timestamp: Date.now() };
+  } else {
+    queue.push({ table, payload, action, timestamp: Date.now() });
+  }
+  saveToStorage("osce_pending_sync", queue);
+  updateRealtimeBadge(navigator.onLine ? "online" : "offline");
+}
+
+async function processPendingSync() {
+  if (isProcessingPendingSync || !navigator.onLine) return;
+  const queue = getFromStorage("osce_pending_sync") || [];
+  if (queue.length === 0) return;
+
+  isProcessingPendingSync = true;
+  console.log(`[Sync Engine] Memproses ${queue.length} antrian tertunda...`);
+
+  const remaining = [];
+  for (const item of queue) {
+    try {
+      // Re-use syncAction logic carefully
+      let success = false;
+      if (item.table.startsWith("osce_")) {
+        const configKey =
+          item.table === "osce_schedule_params"
+            ? "scheduleParams"
+            : item.table === "osce_cert_settings"
+              ? "certSettings"
+              : item.table === "osce_collective_passing_grade"
+                ? "osce_collective_passing_grade"
+                : item.table === "osce_excluded_stations"
+                  ? "osce_excluded_stations"
+                  : "osce_passing_method";
+
+        const { error } = await supabaseClient.from("config").upsert({
+          key: configKey,
+          value: item.payload,
+          updated_at: new Date().toISOString(),
+        });
+        if (!error) success = true;
+      } else {
+        if (item.action === "delete") {
+          const { error } = await supabaseClient
+            .from(item.table)
+            .delete()
+            .eq("id", item.payload.id);
+          if (!error) success = true;
+        } else {
+          const { error } = await supabaseClient
+            .from(item.table)
+            .upsert(item.payload);
+          if (!error) success = true;
+        }
+      }
+
+      if (!success) remaining.push(item);
+    } catch (e) {
+      console.warn(`[Sync Engine] Retrying ${item.table} failed:`, e.message);
+      remaining.push(item);
+    }
+  }
+
+  saveToStorage("osce_pending_sync", remaining);
+  isProcessingPendingSync = false;
+  updateRealtimeBadge("online");
+
+  if (remaining.length === 0) {
+    console.log("[Sync Engine] Semua antrian berhasil disinkronkan.");
+  }
+}
+
+// Network state listeners
+window.addEventListener("online", () => {
+  updateRealtimeBadge("online");
+  processPendingSync();
+});
+window.addEventListener("offline", () => {
+  updateRealtimeBadge("offline");
+});
+// Periodic check every 30 seconds
+if (syncQueueInterval) clearInterval(syncQueueInterval);
+syncQueueInterval = setInterval(processPendingSync, 30000);
 
 function initializeData() {
   const user = JSON.parse(sessionStorage.getItem("osce_user"));
@@ -2653,9 +2781,9 @@ async function saveScore(e) {
     } catch (error) {
       console.error("Gagal mengirim skor tunggal:", error);
       saveButton.classList.replace("btn-success", "btn-warning");
-      saveButton.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Gagal Kirim`;
+      saveButton.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Tersimpan (Menunggu Antrian)`;
       alert(
-        "Penilaian berhasil disimpan di perangkat ini, tetapi GAGAL dikirim ke Supabase. Cek koneksi internet Anda dan gunakan tombol 'Kirim Nilai' di navigasi untuk mengirim semua nilai nanti.",
+        "Penilaian berhasil disimpan secara lokal, tetapi GAGAL disinkronkan ke server (Offline). \n\nTenang, data Anda sudah masuk antrian dan akan dikirim otomatis saat koneksi internet pulih. Anda juga dapat memantau status di badge 'Terputus (x tertunda)' di bagian atas.",
       );
     }
   } else {
@@ -5407,3 +5535,6 @@ function printStudentAttendance() {
     printWindow.print();
   }, 500);
 }
+
+// Jalankan sinkronisasi awal untuk memproses antrian tertunda jika ada
+processPendingSync();
