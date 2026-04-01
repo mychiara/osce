@@ -920,7 +920,10 @@ async function pushPengujiScores() {
 
 async function pullDataFromServer() {
   try {
-    // Fetch all tables in parallel from Supabase
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Fetch with Column Selection (Hemat Bandwidth)
     const [
       pesertaRes,
       pengujiRes,
@@ -930,13 +933,23 @@ async function pullDataFromServer() {
       configRes,
       feedbackRes,
     ] = await Promise.all([
-      supabaseClient.from("peserta").select("*"),
-      supabaseClient.from("penguji").select("*"),
-      supabaseClient.from("stations").select("*"),
-      supabaseClient.from("scores").select("*"),
-      supabaseClient.from("credentials").select("*"),
-      supabaseClient.from("config").select("*"),
-      supabaseClient.from("feedback").select("*"),
+      supabaseClient.from("peserta").select("id, nim, nama, sesi"),
+      supabaseClient.from("penguji").select("id, nip, nama, role"),
+      supabaseClient
+        .from("stations")
+        .select("id, name, rubric, passingGrade, maxTime, soal"),
+      // Khusus scores: Hanya ambil yang baru diperbarui dalam 7 hari terakhir
+      supabaseClient
+        .from("scores")
+        .select(
+          "id, pesertaId, pengujiId, stationId, scores, globalPerformance, totalScore, percentage, feedback, updated_at",
+        )
+        .gt("updated_at", sevenDaysAgo.toISOString()),
+      supabaseClient.from("credentials").select("username, password, role"),
+      supabaseClient.from("config").select("key, value"),
+      supabaseClient
+        .from("feedback")
+        .select("id, pesertaId, stationId, feedback"),
     ]);
 
     // Check for errors
@@ -952,7 +965,14 @@ async function pullDataFromServer() {
     saveToStorage("peserta", pesertaRes.data || []);
     saveToStorage("penguji", pengujiRes.data || []);
     saveToStorage("stations", stationsRes.data || []);
-    saveToStorage("scores", scoresRes.data || []);
+
+    // Incremental Score Merge (Menggabungkan skor baru dengan skor lama di local)
+    const localScores = getFromStorage("scores") || [];
+    const newScores = scoresRes.data || [];
+    const mergedScoresMap = new Map(localScores.map((s) => [s.id, s]));
+    newScores.forEach((s) => mergedScoresMap.set(s.id, s));
+    saveToStorage("scores", Array.from(mergedScoresMap.values()));
+
     saveToStorage("feedback", feedbackRes.data || []);
 
     // Parse config
@@ -976,7 +996,7 @@ async function pullDataFromServer() {
     );
 
     // Update credentials
-    USER_CREDENTIALS = { admin: "admin123" }; // Keep admin as fallback
+    USER_CREDENTIALS = { admin: "admin123" };
     (credentialsRes.data || []).forEach((cred) => {
       if (cred.username && cred.password) {
         USER_CREDENTIALS[cred.username] = cred.password;
@@ -984,10 +1004,8 @@ async function pullDataFromServer() {
     });
 
     return {
-      peserta: pesertaRes.data,
-      penguji: pengujiRes.data,
-      stations: stationsRes.data,
-      scores: scoresRes.data,
+      success: true,
+      count: newScores.length,
     };
   } catch (error) {
     console.error("Pull from Supabase error:", error);
