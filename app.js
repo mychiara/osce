@@ -923,7 +923,7 @@ async function pullDataFromServer() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Fetch with Column Selection (Hemat Bandwidth)
+    // Fetch data from Supabase
     const [
       pesertaRes,
       pengujiRes,
@@ -933,23 +933,15 @@ async function pullDataFromServer() {
       configRes,
       feedbackRes,
     ] = await Promise.all([
-      supabaseClient.from("peserta").select("id, nim, nama, sesi"),
-      supabaseClient.from("penguji").select("id, nip, nama, role"),
+      supabaseClient.from("peserta").select("*"),
+      supabaseClient.from("penguji").select("*"),
       supabaseClient
         .from("stations")
         .select("id, name, rubric, passingGrade, maxTime, soal"),
-      // Khusus scores: Hanya ambil yang baru diperbarui dalam 7 hari terakhir
-      supabaseClient
-        .from("scores")
-        .select(
-          "id, pesertaId, pengujiId, stationId, scores, globalPerformance, totalScore, percentage, feedback, updated_at",
-        )
-        .gt("updated_at", sevenDaysAgo.toISOString()),
+      supabaseClient.from("scores").select("*"),
       supabaseClient.from("credentials").select("username, password, role"),
       supabaseClient.from("config").select("key, value"),
-      supabaseClient
-        .from("feedback")
-        .select("id, pesertaId, stationId, feedback"),
+      supabaseClient.from("feedback").select("*"),
     ]);
 
     // Check for errors
