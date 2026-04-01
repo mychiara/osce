@@ -118,7 +118,7 @@ async function login(event) {
   // This is crucial for the app to work with up-to-date information.
   try {
     showSyncStatus(
-      '<div class="spinner-border text-primary" role="status"></div><h4 class="mt-3">Autentikasi & Sinkronisasi...</h4><p class="text-muted">Mengambil data terbaru dari Supabase...</p>',
+      '<div class="spinner-border text-primary" role="status"></div><h4 class="mt-3">Autentikasi & Sinkronisasi...</h4><p class="text-muted">Mengambil data terbaru</p>',
     );
     await pullDataFromServer();
     syncModal.hide();
@@ -992,8 +992,7 @@ async function pullDataFromServer() {
   } catch (error) {
     console.error("Pull from Supabase error:", error);
     throw new Error(
-      "Gagal mengambil data dari Supabase: " +
-        (error.message || error.toString()),
+      "Gagal mengambil data terbaru: " + (error.message || error.toString()),
     );
   }
 }
