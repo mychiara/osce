@@ -3324,14 +3324,15 @@ function renderRubricPerformanceChart() {
   scores.forEach((score) => {
     const station = stations.find((s) => s.id === score.stationId);
     if (!station) return;
-    const passingGrade = station.passingGrade || 75;
     score.scores.forEach((item) => {
       const rubricItem = station.rubric.find((r) => r.id === item.rubricId);
       if (!rubricItem) return;
       const key = `${station.id}-${item.rubricId}`;
       const percentage =
         rubricItem.maxScore > 0 ? (item.score / rubricItem.maxScore) * 100 : 0;
-      if (percentage >= passingGrade) rubricStats[key].passed++;
+      // Menggunakan threshold 50% untuk item individual (bukan passing grade stasiun),
+      // karena passing grade stasiun dirancang untuk skor keseluruhan berbobot.
+      if (percentage >= 50) rubricStats[key].passed++;
       else rubricStats[key].failed++;
     });
   });
