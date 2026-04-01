@@ -290,9 +290,21 @@ async function setupRealtimeSubscriptions() {
           handleIncomingSync(table, payload);
         },
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED" && table === "peserta")
-          updateRealtimeBadge("online");
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          console.log(`[Realtime] Subscribed to ${table}`);
+          // Jika salah satu tabel inti terhubung, anggap online
+          if (table === "peserta" || table === "scores")
+            updateRealtimeBadge("online");
+        }
+        if (status === "CHANNEL_ERROR") {
+          console.error(`[Realtime] Connection error for ${table}:`, err);
+          updateRealtimeBadge("offline");
+        }
+        if (status === "TIMED_OUT") {
+          console.warn(`[Realtime] Connection timed out for ${table}`);
+          updateRealtimeBadge("offline");
+        }
       });
   });
 }
